@@ -2,281 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goob Horizon - Arcade Edition</title>
+    <title>Goob Horizon Standalone</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #1a1a2e;
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-        h1 {
-            color: #e94560;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 0px #0f3460;
-        }
-        #game-container {
-            position: relative;
-            box-shadow: 0 0 20px rgba(78, 204, 163, 0.4);
-            border: 4px solid #4ecca3;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            background-color: #333;
-        }
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(26, 26, 46, 0.85);
-            z-index: 10;
-        }
-        .hidden {
-            display: none !important;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background-color: #e94560;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: transform 0.1s, background-color 0.2s;
-        }
-        button:hover {
-            background-color: #ff5c77;
-            transform: scale(1.05);
-        }
-        button:active {
-            transform: scale(0.95);
-        }
-        #score-display {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4ecca3;
-            z-index: 5;
-            text-shadow: 1px 1px 2px black;
-        }
-        .instructions {
-            margin-top: 15px;
-            color: #4ecca3;
-            font-size: 0.9rem;
-        }
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; }
     </style>
+    <!-- Include Three.js for 3D Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-
-    <h1>Goob Horizon</h1>
-    
-    <div id="game-container">
-        <div id="score-display">Smiles: <span id="score">0</span></div>
-        
-        <div id="ui-layer">
-            <h2 id="game-message" style="color: white; font-size: 2rem; margin-bottom: 20px;">Ready to Drive?</h2>
-            <button id="start-btn">Start Game</button>
-        </div>
-
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-    </div>
-    
-    <div class="instructions">Controls: <strong>Left/Right Arrows</strong> or <strong>A/D</strong> to steer. Dodge the red blocks!</div>
-
+    <div id="ui">SPEED: <span id="speed">0</span> MPH</div>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const uiLayer = document.getElementById('ui-layer');
-        const startBtn = document.getElementById('start-btn');
-        const gameMessage = document.getElementById('game-message');
-        const scoreElement = document.getElementById('score');
+        // 1. Setup Scene, Camera, Renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-        // Game State
-        let isPlaying = false;
-        let animationId;
-        let score = 0;
-        let gameSpeed = 4;
-        let frameCount = 0;
-        let lineOffset = 0;
+        // 2. Add lighting (Sun and Sky ambiance)
+        const light = new THREE.DirectionalLight(0xffffff, 1.2);
+        light.position.set(10, 20, 15);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
 
-        // Player (The Goob Kart)
-        const player = {
-            x: 175,
-            y: 500,
-            width: 40,
-            height: 70,
-            color: '#4ecca3',
-            speed: 6,
-            dx: 0
-        };
+        // 3. Create a Basic Car Mesh (Chassis + 4 Wheels)
+        const car = new THREE.Group();
+        const bodyGeom = new THREE.BoxGeometry(2, 0.6, 4);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, roughness: 0.2 });
+        const body = new THREE.Mesh(bodyGeom, bodyMat);
+        car.add(body);
+        scene.add(car);
 
-        // Obstacles (The Heavy Bonkers)
-        let obstacles = [];
+        // Position Camera behind the vehicle
+        camera.position.set(0, 3, -7);
 
-        // Input Handling
-        const keys = {
-            ArrowLeft: false,
-            ArrowRight: false,
-            KeyA: false,
-            KeyD: false
-        };
+        // 4. Basic Animation & Keyboard Input Loop
+        const keys = { w: false, a: false, s: false, d: false };
+        window.addEventListener('keydown', (e) => { if(e.key in keys) keys[e.key] = true; });
+        window.addEventListener('keyup', (e) => { if(e.key in keys) keys[e.key] = false; });
 
-        window.addEventListener('keydown', (e) => {
-            if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
-        });
+        let speed = 0;
+        let rotation = 0;
 
-        window.addEventListener('keyup', (e) => {
-            if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
-        });
+        function animate() {
+            requestAnimationFrame(animate);
 
-        function resetGame() {
-            player.x = canvas.width / 2 - player.width / 2;
-            obstacles = [];
-            score = 0;
-            gameSpeed = 5;
-            frameCount = 0;
-            scoreElement.innerText = score;
-            uiLayer.classList.add('hidden');
-            isPlaying = true;
-            gameLoop();
+            // Simple physics math
+            if (keys.w) speed = Math.min(speed + 0.01, 0.5);
+            else if (keys.s) speed = Math.max(speed - 0.01, -0.2);
+            else speed *= 0.95; // Friction friction
+
+            if (keys.a) rotation += 0.03 * (speed / 0.5);
+            if (keys.d) rotation -= 0.03 * (speed / 0.5);
+
+            car.rotation.y = rotation;
+            car.translateZ(speed);
+
+            // Camera follow math
+            const relativeCameraOffset = new THREE.Vector3(0, 3, -8);
+            const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, cameraOffset.x, 0.1);
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y, cameraOffset.y, 0.1);
+            camera.position.z = THREE.MathUtils.lerp(camera.position.z, cameraOffset.z, 0.1);
+            camera.lookAt(car.position);
+
+            document.getElementById('speed').innerText = Math.round(speed * 300);
+            renderer.render(scene, camera);
         }
-
-        function gameOver() {
-            isPlaying = false;
-            cancelAnimationFrame(animationId);
-            gameMessage.innerText = `CRASHED! Smiles: ${Math.floor(score)}`;
-            startBtn.innerText = "Play Again";
-            uiLayer.classList.remove('hidden');
-        }
-
-        function spawnObstacle() {
-            // Spawn rate increases slightly with speed
-            if (frameCount % Math.max(20, Math.floor(60 - gameSpeed * 2)) === 0) {
-                const width = 40 + Math.random() * 30; // Random width
-                const x = Math.random() * (canvas.width - width - 40) + 20; // Keep within grass margins
-                obstacles.push({
-                    x: x,
-                    y: -100,
-                    width: width,
-                    height: 80,
-                    color: '#e94560'
-                });
-            }
-        }
-
-        function update() {
-            // Move Player
-            if ((keys.ArrowLeft || keys.KeyA) && player.x > 20) {
-                player.x -= player.speed;
-            }
-            if ((keys.ArrowRight || keys.KeyD) && player.x < canvas.width - player.width - 20) {
-                player.x += player.speed;
-            }
-
-            // Update Obstacles
-            for (let i = 0; i < obstacles.length; i++) {
-                let obs = obstacles[i];
-                obs.y += gameSpeed;
-
-                // Collision Detection (Axis-Aligned Bounding Box)
-                if (
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y
-                ) {
-                    gameOver();
-                }
-
-                // Remove off-screen obstacles
-                if (obs.y > canvas.height) {
-                    obstacles.splice(i, 1);
-                    i--;
-                }
-            }
-
-            // Increase score and difficulty
-            score += gameSpeed * 0.02;
-            scoreElement.innerText = Math.floor(score);
-            gameSpeed += 0.002; // Slowly accelerate the game
-            frameCount++;
-            
-            // Road line animation
-            lineOffset += gameSpeed;
-            if (lineOffset > 60) lineOffset = 0;
-        }
-
-        function draw() {
-            // Clear canvas
-            ctx.fillStyle = '#222';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Grass margins
-            ctx.fillStyle = '#0f3460';
-            ctx.fillRect(0, 0, 20, canvas.height);
-            ctx.fillRect(canvas.width - 20, 0, 20, canvas.height);
-
-            // Draw center road lines
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            for (let i = -60; i < canvas.height; i += 60) {
-                ctx.fillRect(canvas.width / 2 - 5, i + lineOffset, 10, 30);
-            }
-
-            // Draw Player (The Goob Kart)
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            // Kart details (windshield)
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(player.x + 5, player.y + 10, player.width - 10, 15);
-            // Googly eyes on the kart
-            ctx.fillStyle = 'black';
-            ctx.fillRect(player.x + 10, player.y + 15, 4, 4);
-            ctx.fillRect(player.x + 25, player.y + 15, 4, 4);
-
-            // Draw Obstacles
-            for (let obs of obstacles) {
-                ctx.fillStyle = obs.color;
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                // Obstacle details
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.fillRect(obs.x + 5, obs.y + 5, obs.width - 10, obs.height - 10);
-            }
-        }
-
-        function gameLoop() {
-            if (!isPlaying) return;
-            update();
-            spawnObstacle();
-            draw();
-            animationId = requestAnimationFrame(gameLoop);
-        }
-
-        startBtn.addEventListener('click', resetGame);
-        
-        // Initial static draw so it doesn't look empty before clicking start
-        draw();
+        animate();
     </script>
 </body>
 </html>

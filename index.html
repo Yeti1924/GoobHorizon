@@ -6,7 +6,6 @@
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* Premium Speedometer Dashboard */
         #dashboard {
             position: absolute;
             bottom: 25px;
@@ -88,7 +87,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-        // Your exact integrated credentials
         const firebaseConfig = {
             apiKey: "AIzaSyB0_yk-kpB8Si-JGzI8k-qK9eWkGl5eRJ4",
             authDomain: "goob-horizon.firebaseapp.com",
@@ -100,19 +98,16 @@
             measurementId: "G-D10NCG1DK4"
         };
 
-        // Initialize App Setup
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Generate a random ID for this session player
         const playerId = "player_" + Math.floor(Math.random() * 100000);
         const playerRef = ref(db, `players/${playerId}`);
 
-        // Clean up database entry when player closes the window tab
         onDisconnect(playerRef).remove();
 
-        // Export to standard window scope so the animation engine can access it
-        window.network = { playerId, playerRef, db, onValue, set, remove };
+        // Exporting destructuring targets cleanly to window scope
+        window.network = { playerId, playerRef, db, ref, onValue, set, remove };
     </script>
 </head>
 <body>
@@ -227,7 +222,6 @@
             return { mesh: group, container: chassisContainer, wheels: [fl, fr, rl, rr] };
         }
 
-        // Host vehicle (Neon Red)
         const localCarData = createCarModel(0xff1133);
         const car = localCarData.mesh;
         const carChassisContainer = localCarData.container;
@@ -260,7 +254,6 @@
                 miniCtx.fill();
             });
 
-            // Draw peers (Teal/Yellow dots)
             miniCtx.fillStyle = '#00ffcc';
             for (let id in remotePlayers) {
                 const p = remotePlayers[id].mesh;
@@ -269,7 +262,6 @@
                 miniCtx.fill();
             }
 
-            // Draw local host (Red Arrow)
             const carMapX = car.position.x * MAP_SCALE + MAP_CENTER;
             const carMapZ = car.position.z * MAP_SCALE + MAP_CENTER;
             miniCtx.save();
@@ -293,7 +285,6 @@
         function animate(timestamp) {
             requestAnimationFrame(animate);
 
-            // --- ADVANCED DYNAMIC HILL & TURN PHYSICS ---
             const groundY = getHeight(car.position.x, car.position.z);
             const dirX = Math.sin(rotation);
             const dirZ = Math.cos(rotation);
@@ -336,7 +327,7 @@
             const wheelSpinDelta = speed * 1.5;
             localCarData.wheels.forEach(w => w.rotation.x += wheelSpinDelta);
 
-            // --- TREE COLLISION PASS ---
+            // Tree collisions
             for (let i = 0; i < trees.length; i++) {
                 const tree = trees[i];
                 const dx = car.position.x - tree.x;
@@ -352,7 +343,7 @@
                 }
             }
 
-            // --- VERTICAL FLIGHT GRAVITY ENGINE ---
+            // Airborne logic
             const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
             let isAirborne = false;
 
@@ -383,7 +374,7 @@
                 isAirborne = false;
             }
 
-            // --- GROUND SLOPE PITCH CALCULATOR ---
+            // Slope Pitch
             if (!isAirborne) {
                 const lookDist = 1.5;
                 const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
@@ -395,19 +386,17 @@
                 carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
             }
 
-            // Sandbox Boundaries
             if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
             if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
             if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
             if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
 
-            // Camera follow mechanics
             const relativeCameraOffset = new THREE.Vector3(0, 4.5, -11);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
             camera.position.lerp(cameraOffset, 0.08); 
             camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 0.5, car.position.z));
 
-            // --- INTERPOLATE REMOTE NETWORK VEHICLES ---
+            // Remote vehicle interpolation
             for (let id in remotePlayers) {
                 const pData = remotePlayers[id];
                 pData.mesh.position.lerp(pData.targetPosition, 0.15);
@@ -418,7 +407,7 @@
                 pData.wheels.forEach(w => w.rotation.x += remoteWheelSpin);
             }
 
-            // --- FIREBASE BROADCAST ROUTINE ---
+            // Push updates to Firebase
             if (window.network && timestamp - lastNetworkTick > 33) {
                 lastNetworkTick = timestamp;
                 window.network.set(window.network.playerRef, {
@@ -431,7 +420,7 @@
                 });
             }
 
-            // --- 2D CANVAS SPEEDOMETER ARC LOGIC ---
+            // Canvas Speedometer Gauge
             const currentMph = Math.round(speed * 100);
             document.getElementById('speed_digital').innerText = currentMph;
 
@@ -479,8 +468,11 @@
             if (window.network) {
                 clearInterval(setupNetworkHooks);
                 
-                const playersRef = window.network.ref(window.network.db, 'players');
-                window.network.onValue(playersRef, (snapshot) => {
+                // Fixed: Destructuring variables natively from window module assignment
+                const { ref, db, onValue } = window.network;
+                const playersRef = ref(db, 'players');
+                
+                onValue(playersRef, (snapshot) => {
                     const data = snapshot.val();
                     if (!data) return;
 
@@ -489,7 +481,6 @@
 
                         const p = data[id];
                         if (!remotePlayers[id]) {
-                            // Spawn teammate/opponent vehicle (Teal styling)
                             const newCar = createCarModel(0x00ffcc);
                             scene.add(newCar.mesh);
                             

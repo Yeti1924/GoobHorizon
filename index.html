@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Full Simulation</title>
+    <title>Goob Horizon - Advanced Physics Simulation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
@@ -19,12 +19,11 @@
             justify-content: center;
             align-items: center;
             background: radial-gradient(circle, rgba(20,20,30,0.7) 0%, rgba(10,10,15,0.9) 80%);
-            border: 2px solid rgba(255, 20, 147, 0.3); /* Subtle neon pink trim */
+            border: 2px solid rgba(255, 20, 147, 0.3);
             border-radius: 50%;
             box-shadow: 0 0 25px rgba(255, 20, 147, 0.15), inset 0 0 15px rgba(0, 191, 255, 0.1);
         }
 
-        /* Canvas for drawing the curved dial arc */
         #gauge_canvas {
             position: absolute;
             top: 0;
@@ -34,7 +33,6 @@
             z-index: 1;
         }
 
-        /* Speed Numbers UI */
         #speed_digital {
             z-index: 2;
             font-size: 52px;
@@ -49,7 +47,7 @@
             z-index: 2;
             font-size: 14px;
             font-weight: 700;
-            color: #00bfff; /* Horizon electric blue */
+            color: #00bfff;
             letter-spacing: 2px;
             text-shadow: 0 0 8px rgba(0, 191, 255, 0.5);
         }
@@ -71,7 +69,6 @@
             100% { transform: scale(1.1); opacity: 1; }
         }
 
-        /* Synchronized Minimap Styling */
         #minimap_canvas {
             position: absolute;
             top: 20px;
@@ -84,12 +81,10 @@
             box-shadow: 0 6px 15px rgba(0,0,0,0.6);
         }
     </style>
-    <!-- Three.js CDN Graphic Library Core -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <!-- Speedometer HUD overlay -->
     <div id="dashboard">
         <span id="airtime" style="display: none;">Big Air Time!</span>
         <canvas id="gauge_canvas" width="220" height="220"></canvas>
@@ -97,7 +92,6 @@
         <div id="speed_unit">MPH</div>
     </div>
 
-    <!-- Live Navigation Map Layer -->
     <canvas id="minimap_canvas" width="220" height="220"></canvas>
     
     <script>
@@ -106,7 +100,7 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x66CCFF); // Blue sky dome
+        renderer.setClearColor(0x66CCFF);
         document.body.appendChild(renderer.domElement);
 
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -120,6 +114,7 @@
         const MAP_CENTER = 110;
 
         function getHeight(x, z) {
+            // Complex sinusoids create compound slope landscapes
             const hill1 = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 25; 
             const hill2 = Math.sin(x * 0.005 + z * 0.01) * 12;
             return hill1 + hill2;
@@ -163,7 +158,6 @@
             treeGroup.position.set(x, y, z);
             scene.add(treeGroup);
             
-            // Log positioning matrix array for physics loops
             trees.push({ x: x, z: z, radius: COLLISION_RADIUS });
         }
 
@@ -175,22 +169,18 @@
         const cabinMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.1 });
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
 
-        // Base frame chassis panel
         const bodyBase = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 4.4), bodyMat);
         bodyBase.position.y = 0.4;
         carChassisContainer.add(bodyBase);
 
-        // Hood detail panel
         const hood = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 1.8), bodyMat);
         hood.position.set(0, 0.6, 1.2);
         carChassisContainer.add(hood);
 
-        // Tinted cabin glass mesh
         const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 1.8), cabinMat);
         cabin.position.set(0, 0.9, -0.4);
         carChassisContainer.add(cabin);
 
-        // Cylinder sports rim structural items
         const wheelGeom = new THREE.CylinderGeometry(0.45, 0.45, 0.4, 12);
         wheelGeom.rotateZ(Math.PI / 2); 
         
@@ -212,13 +202,13 @@
         
         camera.position.set(0, 5, -12);
 
-        // --- 5. CONFIG TUNING PHYSICS ---
+        // --- 5. CONFIG TUNING PHYSICS & FORCES ---
         let speed = 0, rotation = 0;
         let verticalVelocity = 0; 
         
-        const MAX_SPEED = 1.4;       // Corresponds to 140 MPH top cap
-        const ACCELERATION = 0.0025; // Slower acceleration rate matching request
-        const GRAVITY = 0.007;       // Flotier gravity setting
+        const BASE_MAX_SPEED = 1.4;    // The throttle's absolute engine limit on flat ground
+        const ACCELERATION = 0.0035; 
+        const GRAVITY = 0.007;       
         const CAR_HEIGHT_OFFSET = 0.0; 
 
         // --- 6. MINIMAP DRAW ENGINE ---
@@ -227,8 +217,6 @@
 
         function drawMinimap() {
             miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
-            
-            // Draw all synchronized tree nodes
             miniCtx.fillStyle = 'rgba(15, 70, 15, 0.6)';
             trees.forEach(tree => {
                 miniCtx.beginPath();
@@ -236,7 +224,6 @@
                 miniCtx.fill();
             });
 
-            // Draw player position element
             const carMapX = car.position.x * MAP_SCALE + MAP_CENTER;
             const carMapZ = car.position.z * MAP_SCALE + MAP_CENTER;
             miniCtx.save();
@@ -258,18 +245,60 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Driving loops applying the slower acceleration parameters
-            if (keys.w) speed = Math.min(speed + ACCELERATION, MAX_SPEED); 
-            else if (keys.s) speed = Math.max(speed - 0.02, -0.4);
-            else speed *= 0.985; // Coasting air drag friction
+            // --- ADVANCED DYNAMIC HILL & TURN PHYSICS CALCULATIONS ---
+            const groundY = getHeight(car.position.x, car.position.z);
+            const dirX = Math.sin(rotation);
+            const dirZ = Math.cos(rotation);
 
+            // 1. Calculate Slope Delta directly in front of the car vector
+            const checkDist = 1.0;
+            const nextGroundY = getHeight(car.position.x + dirX * checkDist, car.position.z + dirZ * checkDist);
+            const slopeGrade = nextGroundY - groundY; // Positive means climbing, negative means descending
+
+            // 2. Compute dynamic physics forces
+            // Slopes affect max speed threshold (downhills allow you to break past flat limits)
+            const dynamicMaxSpeed = BASE_MAX_SPEED - (slopeGrade * 0.8); 
+            
+            // Gravity applies force directly against or with acceleration vector
+            let slopeGravityForce = -slopeGrade * 0.008; 
+            
+            // Centrifugal turning drag calculations
+            let turnFriction = 0;
+            if (Math.abs(speed) > 0.1) {
+                if (keys.a || keys.d) {
+                    // Fast movement turns generate intense sideways drag coefficient
+                    turnFriction = Math.abs(speed) * 0.015;
+                }
+            }
+
+            // 3. Process Throttle & Braking Inputs with contextual environmental drag
+            if (keys.w) {
+                speed += ACCELERATION + slopeGravityForce;
+                // Clamp forward velocity smoothly against current physical peak thresholds
+                if (speed > dynamicMaxSpeed) {
+                    // Drag naturally pulls speed down if we cross limits, gravity pushes it up if falling down hills
+                    speed = THREE.MathUtils.lerp(speed, dynamicMaxSpeed, 0.05);
+                }
+            } else if (keys.s) {
+                speed = Math.max(speed - 0.02, -0.4);
+            } else {
+                // Natural deceleration coasting drag + gravity rolling forces
+                speed *= 0.985;
+                speed += slopeGravityForce;
+            }
+
+            // Apply turn structural drag to energy calculations
+            if (speed > 0) speed = Math.max(speed - turnFriction, 0);
+            if (speed < 0) speed = Math.min(speed + turnFriction, 0);
+
+            // Handle directional rotation
             if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
             if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
 
             car.rotation.y = rotation;
             car.translateZ(speed);
 
-            // Turn cylinder assets dynamically while accelerating
+            // Visual wheel rotation speed updates
             const wheelSpinDelta = speed * 1.5;
             frontLeftWheel.rotation.x += wheelSpinDelta;
             frontRightWheel.rotation.x += wheelSpinDelta;
@@ -284,9 +313,8 @@
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance < tree.radius) {
-                    speed = -speed * 0.4; // Reverse recoil bounce factor
+                    speed = -speed * 0.4; // Bounce momentum recoil
                     
-                    // Unclip coordinate lock mechanics
                     const pushX = (dx / distance) * (tree.radius - distance + 0.1);
                     const pushZ = (dz / distance) * (tree.radius - distance + 0.1);
                     
@@ -296,9 +324,7 @@
             }
 
             // --- VERTICAL FLIGHT GRAVITY ENGINE ---
-            const groundY = getHeight(car.position.x, car.position.z);
             const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
-
             let isAirborne = false;
 
             if (currentVehicleFloor > groundY + 0.1) {
@@ -308,15 +334,13 @@
             } else {
                 document.getElementById('airtime').style.display = 'none';
                 
-                const nextGroundY = getHeight(
-                    car.position.x + Math.sin(rotation) * speed, 
-                    car.position.z + Math.cos(rotation) * speed
+                const launchCheckY = getHeight(
+                    car.position.x + dirX * speed, 
+                    car.position.z + dirZ * speed
                 );
-                
-                const slopeDelta = nextGroundY - groundY;
+                const launchDelta = launchCheckY - groundY;
 
-                // Crest launching flight physics threshold logic
-                if (slopeDelta < -1.2 && speed > 0.6) { 
+                if (launchDelta < -1.2 && speed > 0.6) { 
                     verticalVelocity = speed * 0.12; 
                     isAirborne = true;
                 } else {
@@ -333,35 +357,31 @@
                 isAirborne = false;
             }
 
-            // --- CORRECTED GROUND SLOPE PITCH CALCULATOR ---
+            // --- GROUND SLOPE PITCH CALCULATOR ---
             if (!isAirborne) {
                 const lookDist = 1.5;
-                const dirX = Math.sin(rotation);
-                const dirZ = Math.cos(rotation);
-
                 const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
                 const backY = getHeight(car.position.x - dirX * lookDist, car.position.z - dirZ * lookDist);
 
-                // FIXED: Calibrated vector fields (backY - frontY) to orient nose upward during steep hill ascents
                 const pitchAngle = Math.atan2(backY - frontY, lookDist * 2);
                 carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, pitchAngle, 0.15);
             } else {
                 carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
             }
 
-            // Infinite map edge loop wrapping logic
+            // Sandbox Edge Wrap
             if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
             if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
             if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
             if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
 
-            // Third-Person Follow Camera rig logic
+            // Camera Tracker
             const relativeCameraOffset = new THREE.Vector3(0, 4.5, -11);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
             camera.position.lerp(cameraOffset, 0.08); 
             camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 0.5, car.position.z));
 
-            // --- 2D CANVAS DIGITAL ARCAD SPEEDOMETER LOGIC ---
+            // --- 2D CANVAS SPEEDOMETER ARC LOGIC ---
             const currentMph = Math.round(speed * 100);
             document.getElementById('speed_digital').innerText = currentMph;
 
@@ -369,15 +389,16 @@
             const gCtx = gCanvas.getContext('2d');
             gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
 
-            const speedPct = Math.min(Math.abs(speed) / MAX_SPEED, 1);
+            // Display arc percentage relative to standard max engine limit
+            const speedPct = Math.min(Math.abs(speed) / BASE_MAX_SPEED, 1.2); // Allow arc overlap during high speed downhills
             const centerX = gCanvas.width / 2;
             const centerY = gCanvas.height / 2;
             const radius = 90;
             const startAngle = 0.75 * Math.PI; 
             const endAngle = 2.25 * Math.PI;   
-            const dynamicEndAngle = startAngle + (endAngle - startAngle) * speedPct;
+            const dynamicEndAngle = startAngle + (endAngle - startAngle) * Math.min(speedPct, 1.0);
 
-            // Render empty structural background gauge frame
+            // Empty slot track
             gCtx.beginPath();
             gCtx.arc(centerX, centerY, radius, startAngle, endAngle);
             gCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -385,7 +406,7 @@
             gCtx.lineCap = 'round';
             gCtx.stroke();
 
-            // Render neon glowing telemetry arcs
+            // Active neon fill
             gCtx.beginPath();
             gCtx.arc(centerX, centerY, radius, startAngle, dynamicEndAngle);
             
@@ -400,7 +421,7 @@
             gCtx.shadowBlur = 12;
             gCtx.shadowColor = speedPct > 0.85 ? '#ff1133' : '#00bfff';
             gCtx.stroke();
-            gCtx.shadowBlur = 0; // Prevent shadow blur leak to map layers
+            gCtx.shadowBlur = 0;
 
             drawMinimap();
             renderer.render(scene, camera);

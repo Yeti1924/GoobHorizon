@@ -44,7 +44,7 @@
             margin-bottom: 25px;
         }
 
-        .auth-container input {
+        .auth-container input[type="text"] {
             width: 100%;
             padding: 12px 20px;
             margin-bottom: 20px;
@@ -58,9 +58,55 @@
             text-align: center;
         }
 
-        .auth-container input:focus {
+        .auth-container input[type="text"]:focus {
             border-color: #00bfff;
             box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+        }
+
+        /* --- DYNAMIC COLOR WHEEL SELECTION --- */
+        .color-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8a8ab0;
+            margin-bottom: 8px;
+            text-align: left;
+            display: block;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: rgba(10, 10, 20, 0.4);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .color-wheel {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 55px;
+            height: 55px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .color-wheel::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .color-wheel::-moz-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
         }
 
         .auth-container button {
@@ -196,6 +242,13 @@
             <h1>Goob Horizon</h1>
             <p>Hypercar Multiplayer Edition</p>
             <input type="text" id="username_input" placeholder="Enter Driver Name..." maxlength="14" value="Driver">
+            
+            <span class="color-label">Customize Paint Color:</span>
+            <div class="color-picker-container">
+                <input type="color" id="color_wheel" class="color-wheel" value="#ff1133">
+                <span style="font-size: 14px; font-weight: bold; color: #aaa;">Click wheel to style</span>
+            </div>
+
             <button id="join_btn">Join Race</button>
         </div>
     </div>
@@ -213,6 +266,7 @@
         // --- 1. SETUP ENGINE ---
         let gameActive = false;
         let playerDisplayName = "Driver";
+        let playerSelectedColor = "#ff1133"; // Hex String tracked format
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
@@ -301,16 +355,22 @@
             const material = new THREE.SpriteMaterial({ map: texture });
             const sprite = new THREE.Sprite(material);
             sprite.scale.set(6, 1.5, 1);
-            sprite.position.y = 3.2; // Hover height over hypercar roof
+            sprite.position.y = 3.2; 
             return sprite;
         }
 
         // --- 4. ADVANCED HYPERCAR MODEL DESIGN FACTORY ---
-        function createCarModel(colorHex, accentHex = 0x00bfff, driverName = "") {
+        function createCarModel(colorHexStr, accentHex = 0x00bfff, driverName = "") {
             const group = new THREE.Group();
             const chassisContainer = new THREE.Group();
             
-            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.8, roughness: 0.15 });
+            // Clean dynamic hex parse safety block
+            let cleanColor = 0xff1133;
+            if (colorHexStr) {
+                cleanColor = parseInt(colorHexStr.replace("#", "0x"), 16);
+            }
+            
+            const bodyMat = new THREE.MeshStandardMaterial({ color: cleanColor, metalness: 0.8, roughness: 0.15 });
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.05, transparent: true, opacity: 0.85 });
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.7 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
@@ -388,7 +448,6 @@
             chassisContainer.add(fl, fr, rl, rr);
             group.add(chassisContainer);
 
-            // Optional Floating Tag
             if (driverName) {
                 const tag = createNameTag(driverName);
                 group.add(tag);
@@ -397,8 +456,7 @@
             return { mesh: group, container: chassisContainer, wheels: [fl, fr, rl, rr] };
         }
 
-        // Initialize Local Car Assembly Shell
-        let localCarData = createCarModel(0xff1133, 0xffcc00);
+        let localCarData = createCarModel("#ff1133", 0xffcc00);
         let car = localCarData.mesh;
         let carChassisContainer = localCarData.container;
         scene.add(car);
@@ -583,12 +641,12 @@
                         rotY: car.rotation.y,
                         rotX: carChassisContainer.rotation.x,
                         speed: speed,
-                        name: playerDisplayName
+                        name: playerDisplayName,
+                        color: playerSelectedColor // Hex value tracks over network stream smoothly
                     });
                 }
             }
 
-            // Camera Tracking stays smooth relative to space positioning
             const relativeCameraOffset = new THREE.Vector3(0, 6.0, -15);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
             camera.position.lerp(cameraOffset, 0.08); 
@@ -605,8 +663,8 @@
                 pData.wheels.forEach(w => w.rotation.x += remoteWheelSpin);
             }
 
-            // Canvas Speedometer Gauge
-            const currentMph = Math.round(speed * 100);
+            // --- REVERSE MATH FIXED TO SHOW POSITIVE ---
+            const currentMph = Math.round(Math.abs(speed) * 100);
             document.getElementById('speed_digital').innerText = currentMph;
 
             const gCanvas = document.getElementById('gauge_canvas');
@@ -665,8 +723,9 @@
 
                         const p = data[id];
                         if (!remotePlayers[id]) {
-                            // Spawn multiplayer opponents dynamically with their tagged driver text name
-                            const newCar = createCarModel(0x00ffcc, 0xff1133, p.name || "Opponent");
+                            // Spawn multiplayer opponents with their exact custom color wheel selection code synced!
+                            const targetColorHex = p.color || "#00ffcc";
+                            const newCar = createCarModel(targetColorHex, 0xff1133, p.name || "Opponent");
                             scene.add(newCar.mesh);
                             
                             remotePlayers[id] = {
@@ -676,9 +735,23 @@
                                 targetPosition: new THREE.Vector3(p.x, p.y, p.z),
                                 targetRotationY: p.rotY,
                                 targetRotationX: p.rotX,
-                                speed: p.speed
+                                speed: p.speed,
+                                color: targetColorHex
                             };
                         } else {
+                            // Dynamically rebuild opponent vehicle if they swapped paint properties seamlessly
+                            if (remotePlayers[id].color !== p.color) {
+                                scene.remove(remotePlayers[id].mesh);
+                                const updatedColorHex = p.color || "#00ffcc";
+                                const remountedCar = createCarModel(updatedColorHex, 0xff1133, p.name || "Opponent");
+                                scene.add(remountedCar.mesh);
+                                
+                                remotePlayers[id].mesh = remountedCar.mesh;
+                                remotePlayers[id].container = remountedCar.container;
+                                remotePlayers[id].wheels = remountedCar.wheels;
+                                remotePlayers[id].color = updatedColorHex;
+                            }
+
                             remotePlayers[id].targetPosition.set(p.x, p.y, p.z);
                             remotePlayers[id].targetRotationY = p.rotY;
                             remotePlayers[id].targetRotationX = p.rotX;
@@ -694,7 +767,6 @@
                     }
                 });
 
-                // Run baseline visual loops instantly
                 animate(0);
             }
         }, 100);
@@ -706,15 +778,17 @@
                 playerDisplayName = inputVal;
             }
             
-            // Re-render local hypercar model to incorporate user's custom text tag overlay
+            // Capture custom input wheel payload value directly
+            playerSelectedColor = document.getElementById('color_wheel').value;
+            
+            // Re-render local car configuration shell utilizing color wheels value
             scene.remove(car);
-            localCarData = createCarModel(0xff1133, 0xffcc00, playerDisplayName);
+            localCarData = createCarModel(playerSelectedColor, 0xffcc00, playerDisplayName);
             car = localCarData.mesh;
             carChassisContainer = localCarData.container;
             scene.add(car);
             car.position.set((Math.random() - 0.5) * 60, 20, (Math.random() - 0.5) * 60);
 
-            // Close Sign In Panel & Initialize Active State Loops
             document.getElementById('auth_overlay').style.display = 'none';
             gameActive = true;
         });

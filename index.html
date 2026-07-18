@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Hypercar Edition</title>
+    <title>Goob Horizon - Ultimate Sandbox Edition</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         
         /* --- SIGN IN SCREEN OVERLAY --- */
         #auth_overlay {
@@ -19,18 +19,18 @@
         }
 
         .auth-container {
-            background: rgba(20, 20, 35, 0.85);
+            background: rgba(20, 20, 35, 0.9);
             padding: 40px;
             border-radius: 16px;
-            border: 2px solid #ff1133;
-            box-shadow: 0 0 30px rgba(255, 17, 51, 0.3), inset 0 0 20px rgba(0, 191, 255, 0.1);
+            border: 2px solid #00bfff;
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.3);
             text-align: center;
             width: 340px;
         }
 
         .auth-container h1 {
             font-size: 32px;
-            margin-bottom: 5px;
+            margin: 0 0 5px 0;
             text-transform: uppercase;
             letter-spacing: 2px;
             background: linear-gradient(90deg, #ff1133, #00bfff);
@@ -38,732 +38,522 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .auth-container p {
-            font-size: 14px;
-            color: #8a8ab0;
-            margin-bottom: 25px;
-        }
+        .auth-container p { font-size: 14px; color: #8a8ab0; margin-bottom: 25px; }
 
         .auth-container input[type="text"] {
-            width: 100%;
-            padding: 12px 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 191, 255, 0.4);
-            background: rgba(10, 10, 20, 0.6);
-            color: #fff;
-            font-size: 16px;
-            box-sizing: border-box;
-            outline: none;
-            text-align: center;
-        }
-
-        .auth-container input[type="text"]:focus {
-            border-color: #00bfff;
-            box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
-        }
-
-        /* --- DYNAMIC COLOR WHEEL SELECTION --- */
-        .color-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #8a8ab0;
-            margin-bottom: 8px;
-            text-align: left;
-            display: block;
+            width: 100%; padding: 12px 20px; margin-bottom: 20px; border-radius: 8px;
+            border: 1px solid rgba(0, 191, 255, 0.4); background: rgba(10, 10, 20, 0.6);
+            color: #fff; font-size: 16px; box-sizing: border-box; outline: none; text-align: center;
         }
 
         .color-picker-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            background: rgba(10, 10, 20, 0.4);
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            margin-bottom: 25px; background: rgba(10, 10, 20, 0.4); padding: 10px; border-radius: 8px;
         }
 
-        .color-wheel {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            width: 55px;
-            height: 55px;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-
-        .color-wheel::-webkit-color-swatch {
-            border-radius: 50%;
-            border: 2px solid #ffffff;
-            box-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
-
-        .color-wheel::-moz-color-swatch {
-            border-radius: 50%;
-            border: 2px solid #ffffff;
-            box-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
+        .color-wheel { -webkit-appearance: none; appearance: none; width: 50px; height: 50px; background: none; border: none; cursor: pointer; }
+        .color-wheel::-webkit-color-swatch { border-radius: 50%; border: 2px solid #fff; }
 
         .auth-container button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(90deg, #ff1133, #ff00ff);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 17, 51, 0.4);
-            transition: all 0.2s;
-        }
-
-        .auth-container button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 17, 51, 0.6);
+            width: 100%; padding: 14px; background: linear-gradient(90deg, #00bfff, #ff00ff);
+            border: none; border-radius: 8px; color: white; font-size: 16px; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
         }
 
         /* --- DASHBOARD GAME UI --- */
         #dashboard {
-            position: absolute;
-            bottom: 25px;
-            left: 30px;
-            width: 220px;
-            height: 220px;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: radial-gradient(circle, rgba(20,20,30,0.7) 0%, rgba(10,10,15,0.9) 80%);
-            border: 2px solid rgba(255, 20, 147, 0.3);
-            border-radius: 50%;
-            box-shadow: 0 0 25px rgba(255, 20, 147, 0.15), inset 0 0 15px rgba(0, 191, 255, 0.1);
+            position: absolute; bottom: 25px; left: 30px; width: 180px; height: 180px; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: radial-gradient(circle, rgba(20,20,30,0.8) 0%, rgba(10,10,15,0.95) 80%);
+            border: 2px solid rgba(0, 191, 255, 0.4); border-radius: 50%;
         }
 
-        #gauge_canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        #speed_digital {
-            z-index: 2;
-            font-size: 52px;
-            font-weight: 900;
-            color: #ffffff;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-            margin-top: 10px;
-            line-height: 45px;
-        }
-
-        #speed_unit {
-            z-index: 2;
-            font-size: 14px;
-            font-weight: 700;
-            color: #00bfff;
-            letter-spacing: 2px;
-            text-shadow: 0 0 8px rgba(0, 191, 255, 0.5);
-        }
+        #gauge_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #speed_digital { z-index: 2; font-size: 44px; font-weight: 900; color: #fff; line-height: 40px; }
+        #speed_unit { z-index: 2; font-size: 12px; font-weight: 700; color: #00bfff; letter-spacing: 1px; }
 
         #airtime {
-            position: absolute;
-            top: -45px;
-            font-size: 20px;
-            font-weight: 800;
-            color: #ffcc00;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            text-shadow: 0 0 12px #ffcc00;
-            animation: pulse 0.6s infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.1); opacity: 1; }
+            position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
+            font-size: 24px; font-weight: 900; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; display: none;
         }
 
         #minimap_canvas {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 220px;
-            height: 220px;
-            border: 3px solid rgba(255, 255, 255, 0.6);
-            background-color: rgba(10, 25, 10, 0.85);
-            border-radius: 12px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+            position: absolute; top: 20px; right: 20px; width: 200px; height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.4); background: rgba(10, 20, 15, 0.85); border-radius: 8px;
         }
+
+        /* --- LIVE RACE CHAT OVERLAY --- */
+        #chat_box {
+            position: absolute; bottom: 25px; left: 230px; width: 320px; height: 180px;
+            background: rgba(10, 10, 20, 0.6); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;
+        }
+        #chat_logs { flex: 1; overflow-y: auto; color: #ddd; font-size: 13px; margin-bottom: 5px; word-wrap: break-word; }
+        #chat_input {
+            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #00bfff; border-radius: 4px;
+            padding: 6px; color: #fff; font-size: 13px; box-sizing: border-box; outline: none;
+        }
+
+        /* --- STATS & SHOP PANEL --- */
+        #stats_hud {
+            position: absolute; top: 20px; left: 20px; color: #fff; font-size: 16px;
+            font-weight: bold; background: rgba(15,15,30,0.7); padding: 15px; border-radius: 8px;
+            border-left: 4px solid #ff00ff;
+        }
+        .hud-tip { font-size: 11px; color: #aaa; font-weight: normal; margin-top: 5px; }
+
+        #upgrade_shop {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 15, 25, 0.95); border: 2px solid #ff00ff; border-radius: 12px;
+            padding: 25px; width: 320px; color: #fff; display: none; z-index: 1000;
+        }
+        .shop-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; }
+        .shop-btn {
+            background: linear-gradient(90deg, #ff00ff, #7000ff); border: none; color: #fff;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;
+        }
+        .shop-btn:hover { filter: brightness(1.2); }
+        .close-shop { width: 100%; padding: 8px; margin-top: 15px; background: #444; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
-    <!-- Firebase App and Database SDK Modules v9 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB0_yk-kpB8Si-JGzI8k-qK9eWkGl5eRJ4",
             authDomain: "goob-horizon.firebaseapp.com",
             databaseURL: "https://goob-horizon-default-rtdb.firebaseio.com",
-            projectId: "goob-horizon",
-            storageBucket: "goob-horizon.firebasestorage.app",
-            messagingSenderId: "527981366865",
-            appId: "1:527981366865:web:d621647c471850d1aa7270",
-            measurementId: "G-D10NCG1DK4"
+            projectId: "goob-horizon"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         const playerId = "player_" + Math.floor(Math.random() * 100000);
         const playerRef = ref(db, `players/${playerId}`);
+        const chatRef = ref(db, `global_chat`);
 
         onDisconnect(playerRef).remove();
-
-        window.network = { playerId, playerRef, db, ref, onValue, set, remove };
+        window.network = { playerId, playerRef, db, ref, onValue, set, push, chatRef };
     </script>
 </head>
 <body>
 
-    <!-- SIGN IN GATE OVERLAY -->
     <div id="auth_overlay">
         <div class="auth-container">
             <h1>Goob Horizon</h1>
-            <p>Hypercar Multiplayer Edition</p>
-            <input type="text" id="username_input" placeholder="Enter Driver Name..." maxlength="14" value="Driver">
-            
-            <span class="color-label">Customize Paint Color:</span>
+            <p>Sandbox Hypercar Setup</p>
+            <input type="text" id="username_input" placeholder="Driver Nickname..." maxlength="12" value="Driver">
             <div class="color-picker-container">
-                <input type="color" id="color_wheel" class="color-wheel" value="#ff1133">
-                <span style="font-size: 14px; font-weight: bold; color: #aaa;">Click wheel to style</span>
+                <input type="color" id="color_wheel" class="color-wheel" value="#00bfff">
+                <span style="font-size: 13px; color: #aaa;">Select Body Finish</span>
             </div>
-
-            <button id="join_btn">Join Race</button>
+            <button id="join_btn">Start Sandbox</button>
         </div>
     </div>
 
+    <div id="stats_hud">
+        Cash: $<span id="hud_cash">0</span><br>
+        Speed Tier: <span id="tier_speed">1</span> | Grip Tier: <span id="tier_grip">1</span>
+        <div class="hud-tip">Press <b>[P]</b> for Upgrades Shop</div>
+    </div>
+
+    <div id="upgrade_shop">
+        <h3 style="margin-top:0; border-bottom: 1px solid #ff00ff; padding-bottom: 5px;">🔧 Performance Tuning</h3>
+        <div style="font-size:14px; margin-bottom:15px; color:#ffcc00;">Available Wallet: $<span id="shop_cash">0</span></div>
+        <div class="shop-row">
+            <div>🚀 Engine Power (+$)<br><small id="lbl_speed">Tier 1</small></div>
+            <button class="shop-btn" onclick="buyUpgrade('speed')">$150</button>
+        </div>
+        <div class="shop-row">
+            <div>🏎️ Sticky Tires (-Slip)<br><small id="lbl_grip">Tier 1</small></div>
+            <button class="shop-btn" onclick="buyUpgrade('grip')">$200</button>
+        </div>
+        <button class="close-shop" onclick="toggleShop()">Resume Race</button>
+    </div>
+
+    <div id="airtime">BIG AIR TIME!</div>
+
     <div id="dashboard">
-        <span id="airtime" style="display: none;">Big Air Time!</span>
-        <canvas id="gauge_canvas" width="220" height="220"></canvas>
+        <canvas id="gauge_canvas" width="180" height="180"></canvas>
         <div id="speed_digital">0</div>
         <div id="speed_unit">MPH</div>
     </div>
 
-    <canvas id="minimap_canvas" width="220" height="220"></canvas>
+    <div id="chat_box">
+        <div id="chat_logs"></div>
+        <input type="text" id="chat_input" placeholder="Press Enter to Chat..." maxlength="45">
+    </div>
+
+    <canvas id="minimap_canvas" width="200" height="200"></canvas>
     
     <script>
-        // --- 1. SETUP ENGINE ---
         let gameActive = false;
         let playerDisplayName = "Driver";
-        let playerSelectedColor = "#ff1133"; // Hex String tracked format
+        let playerSelectedColor = "#00bfff";
+        
+        // Upgrade Stats System
+        let playerCash = 50;
+        let upgradeTiers = { speed: 1, grip: 1 };
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 3000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x66CCFF);
+        renderer.setClearColor(0x050510);
         document.body.appendChild(renderer.domElement);
 
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
-        sunLight.position.set(50, 150, 50);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        sunLight.position.set(100, 200, 50);
         scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x606060));
+        scene.add(new THREE.AmbientLight(0x404050));
 
-        // --- 2. MAP & HILL GENERATION FUNCTION ---
-        const WORLD_SIZE = 2000; 
-        const MAP_SCALE = 220 / WORLD_SIZE; 
-        const MAP_CENTER = 110;
+        // --- WORLD HEIGHT FIELD ---
+        const WORLD_SIZE = 1600; 
+        const MAP_SCALE = 200 / WORLD_SIZE; 
+        const MAP_CENTER = 100;
 
         function getHeight(x, z) {
-            const hill1 = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 25; 
-            const hill2 = Math.sin(x * 0.005 + z * 0.01) * 12;
+            const hill1 = Math.sin(x * 0.015) * Math.cos(z * 0.015) * 35; 
+            const hill2 = Math.sin(x * 0.004) * Math.cos(z * 0.006) * 18;
             return hill1 + hill2;
         }
 
-        const groundGeom = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 150, 150);
+        const groundGeom = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 120, 120);
         groundGeom.rotateX(-Math.PI / 2);
-
         const vertices = groundGeom.attributes.position.array;
         for (let i = 0; i < vertices.length; i += 3) {
             vertices[i + 1] = getHeight(vertices[i], vertices[i + 2]);
         }
         groundGeom.computeVertexNormals();
 
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x44aa44, flatShading: true, roughness: 0.85 });
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x223a22, wireframe: false, flatShading: true, roughness: 0.9 });
         const ground = new THREE.Mesh(groundGeom, groundMat);
         scene.add(ground);
 
-        // --- 3. POPULATE COLLIDABLE TREES ---
+        // --- TREES POPULATION ---
         const trees = [];
-        const TREE_COUNT = 450;
-        const COLLISION_RADIUS = 3.5;
-        
-        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9 });
-        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x1e5c1e, flatShading: true, roughness: 0.7 });
-
-        for (let i = 0; i < TREE_COUNT; i++) {
-            const pseudoX = Math.sin(i * 4325.2) * WORLD_SIZE * 0.45;
-            const pseudoZ = Math.cos(i * 7215.7) * WORLD_SIZE * 0.45;
-            const y = getHeight(pseudoX, pseudoZ);
-            
-            const treeGroup = new THREE.Group();
-            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 6, 5), treeTrunkMat);
-            trunk.position.y = 3;
-            treeGroup.add(trunk);
-            
-            const leaves = new THREE.Mesh(new THREE.ConeGeometry(3.5, 10, 5), treeLeavesMat);
-            leaves.position.y = 9;
-            treeGroup.add(leaves);
-            
-            treeGroup.position.set(pseudoX, y, pseudoZ);
-            scene.add(treeGroup);
-            
-            trees.push({ x: pseudoX, z: pseudoZ, radius: COLLISION_RADIUS });
+        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e1b });
+        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x143d14, flatShading: true });
+        for (let i = 0; i < 250; i++) {
+            const tx = Math.sin(i * 927) * WORLD_SIZE * 0.44;
+            const tz = Math.cos(i * 341) * WORLD_SIZE * 0.44;
+            const ty = getHeight(tx, tz);
+            const group = new THREE.Group();
+            const t = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.7, 5), treeTrunkMat); t.position.y = 2.5;
+            const l = new THREE.Mesh(new THREE.ConeGeometry(3, 8, 4), treeLeavesMat); l.position.y = 6.5;
+            group.add(t, l); group.position.set(tx, ty, tz); scene.add(group);
+            trees.push({ x: tx, z: tz, radius: 4.0 });
         }
 
-        // --- NAME TAG CANVAS FACTORY ---
-        function createNameTag(nameString) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 64;
+        // --- NAME / CHAT TEXTURE CREATOR ---
+        function createDynamicTag(name, text = "") {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 80;
             const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(10, 10, 20, 0.75)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = 'rgba(10, 10, 20, 0.7)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#00bfff';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'Bold 18px sans-serif'; ctx.fillStyle = '#00bfff'; ctx.textAlign = 'center';
+            ctx.fillText(name, 128, 25);
             
-            ctx.font = 'Bold 24px sans-serif';
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(nameString, canvas.width / 2, canvas.height / 2);
-            
+            if(text) {
+                ctx.font = '14px sans-serif'; ctx.fillStyle = '#ffffff';
+                ctx.fillText(text.substring(0, 22), 128, 55);
+            }
             const texture = new THREE.CanvasTexture(canvas);
-            const material = new THREE.SpriteMaterial({ map: texture });
-            const sprite = new THREE.Sprite(material);
-            sprite.scale.set(6, 1.5, 1);
-            sprite.position.y = 3.2; 
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+            sprite.scale.set(5.5, 1.7, 1); sprite.position.y = 3.6;
             return sprite;
         }
 
-        // --- 4. ADVANCED HYPERCAR MODEL DESIGN FACTORY ---
-        function createCarModel(colorHexStr, accentHex = 0x00bfff, driverName = "") {
+        // --- HYPERCAR ASSEMBLE ---
+        function createCarModel(colorHexStr, tagLabel = "") {
             const group = new THREE.Group();
             const chassisContainer = new THREE.Group();
+            const cleanColor = parseInt((colorHexStr || "#00bfff").replace("#", "0x"), 16);
             
-            // Clean dynamic hex parse safety block
-            let cleanColor = 0xff1133;
-            if (colorHexStr) {
-                cleanColor = parseInt(colorHexStr.replace("#", "0x"), 16);
-            }
+            const bMat = new THREE.MeshStandardMaterial({ color: cleanColor, metalness: 0.7, roughness: 0.2 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
             
-            const bodyMat = new THREE.MeshStandardMaterial({ color: cleanColor, metalness: 0.8, roughness: 0.15 });
-            const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.05, transparent: true, opacity: 0.85 });
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.7 });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
-            const neonMat = new THREE.MeshBasicMaterial({ color: accentHex });
-            const darkMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+            const base = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.5, 6), bMat); base.position.y = 0.4;
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 2.4), new THREE.MeshStandardMaterial({color:0x0a0a15})); cabin.position.set(0, 0.9, -0.2);
+            const spoiler = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.1, 0.8), bMat); spoiler.position.set(0, 1.2, -2.8);
+            chassisContainer.add(base, cabin, spoiler);
 
-            // 1. Lower Main Chassis Base
-            const bodyBase = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.6, 6.5), bodyMat);
-            bodyBase.position.y = 0.5;
-            chassisContainer.add(bodyBase);
+            const wGeom = new THREE.CylinderGeometry(0.65, 0.65, 0.5, 12); wGeom.rotateZ(Math.PI / 2);
+            const wheels = [
+                {x: 1.7, z: 1.8}, {x: -1.7, z: 1.8}, {x: 1.7, z: -1.8}, {x: -1.7, z: -1.8}
+            ].map(pos => {
+                const wMesh = new THREE.Mesh(wGeom, wheelMat); wMesh.position.set(pos.x, 0.5, pos.z);
+                chassisContainer.add(wMesh); return wMesh;
+            });
 
-            // 2. Tapered Nose / Front Hood Cover
-            const hood = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.4, 2.5), bodyMat);
-            hood.position.set(0, 0.7, 2.0);
-            chassisContainer.add(hood);
-
-            // 3. Aerodynamic Curved Cabin Roof & Glass Line
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.8, 2.8), glassMat);
-            cabin.position.set(0, 1.2, -0.4);
-            chassisContainer.add(cabin);
-
-            const roofOverlay = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.15, 2.0), bodyMat);
-            roofOverlay.position.set(0, 1.6, -0.5);
-            chassisContainer.add(roofOverlay);
-
-            // 4. Rear Spoiler Wing System
-            const wingStrutLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.3), darkMat);
-            wingStrutLeft.position.set(1.3, 1.0, -3.0);
-            const wingStrutRight = wingStrutLeft.clone();
-            wingStrutRight.position.x = -1.3;
-            
-            const mainWing = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.1, 0.9), bodyMat);
-            mainWing.position.set(0, 1.4, -3.1);
-            chassisContainer.add(wingStrutLeft, wingStrutRight, mainWing);
-
-            // 5. Side Mirrors
-            const mirrorL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.2), bodyMat);
-            mirrorL.position.set(1.9, 1.0, 0.8);
-            const mirrorR = mirrorL.clone();
-            mirrorR.position.x = -1.9;
-            chassisContainer.add(mirrorL, mirrorR);
-
-            // 6. Laser Headlights
-            const lightL = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.1), neonMat);
-            lightL.position.set(1.2, 0.7, 3.26);
-            const lightR = lightL.clone();
-            lightR.position.x = -1.2;
-            chassisContainer.add(lightL, lightR);
-
-            // 7. Wheels Subassembly
-            const wheelGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.6, 16);
-            wheelGeom.rotateZ(Math.PI / 2); 
-
-            const rimGeom = new THREE.CylinderGeometry(0.45, 0.45, 0.65, 12);
-            rimGeom.rotateZ(Math.PI / 2);
-
-            function assembleWheel(x, y, z) {
-                const wGroup = new THREE.Group();
-                const tireMesh = new THREE.Mesh(wheelGeom, wheelMat);
-                const rimMesh = new THREE.Mesh(rimGeom, rimMat);
-                
-                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.7, 8), neonMat);
-                cap.rotateZ(Math.PI / 2);
-                
-                wGroup.add(tireMesh, rimMesh, cap);
-                wGroup.position.set(x, y, z);
-                return wGroup;
-            }
-            
-            const fl = assembleWheel(1.85, 0.5, 2.0);
-            const fr = assembleWheel(-1.85, 0.5, 2.0);
-            const rl = assembleWheel(1.85, 0.5, -2.0);
-            const rr = assembleWheel(-1.85, 0.5, -2.0);
-
-            chassisContainer.add(fl, fr, rl, rr);
             group.add(chassisContainer);
-
-            if (driverName) {
-                const tag = createNameTag(driverName);
-                group.add(tag);
-            }
-            
-            return { mesh: group, container: chassisContainer, wheels: [fl, fr, rl, rr] };
+            const tag = createDynamicTag(tagLabel); group.add(tag);
+            return { mesh: group, container: chassisContainer, wheels, tag };
         }
 
-        let localCarData = createCarModel("#ff1133", 0xffcc00);
-        let car = localCarData.mesh;
-        let carChassisContainer = localCarData.container;
-        scene.add(car);
-        
-        car.position.set((Math.random() - 0.5) * 60, 20, (Math.random() - 0.5) * 60);
-        camera.position.set(0, 6.5, -16);
+        let localCar = createCarModel("#00bfff", "Driver");
+        let car = localCar.mesh; scene.add(car);
+        car.position.set(0, 10, 0);
+
+        // --- AI CAR AGENTS ---
+        const aiDrivers = [];
+        const aiColors = ["#ff5500", "#ffcc00", "#ff0055", "#00ff66", "#9900ff"];
+        for(let i=0; i<5; i++) {
+            let aiObj = createCarModel(aiColors[i], "AI_Bot_" + (i+1));
+            aiObj.mesh.position.set((Math.random()-0.5)*300, 10, (Math.random()-0.5)*300);
+            scene.add(aiObj.mesh);
+            aiDrivers.push({
+                ...aiObj, speed: 0.4 + Math.random()*0.3, rotY: Math.random()*Math.PI*2,
+                targetX: (Math.random()-0.5)*600, targetZ: (Math.random()-0.5)*600
+            });
+        }
 
         const remotePlayers = {};
 
-        // --- 5. CONFIG TUNING PHYSICS ---
+        // --- PHYSICS CONFIG ---
         let speed = 0, rotation = 0;
-        let verticalVelocity = 0; 
-        
-        const BASE_MAX_SPEED = 1.4;    
-        const ACCELERATION = 0.0035; 
-        const GRAVITY = 0.007;       
-        const CAR_HEIGHT_OFFSET = 0.0; 
+        let verticalVelocity = 0;
+        const keys = { w: false, a: false, s: false, d: false };
 
-        // --- 6. MINIMAP DRAW ENGINE ---
-        const miniCanvas = document.getElementById('minimap_canvas');
-        const miniCtx = miniCanvas.getContext('2d');
-
-        function drawMinimap() {
-            miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
-            miniCtx.fillStyle = 'rgba(15, 70, 15, 0.6)';
-            trees.forEach(tree => {
-                miniCtx.beginPath();
-                miniCtx.arc(tree.x * MAP_SCALE + MAP_CENTER, tree.z * MAP_SCALE + MAP_CENTER, 1.2, 0, Math.PI * 2);
-                miniCtx.fill();
-            });
-
-            miniCtx.fillStyle = '#00ffcc';
-            for (let id in remotePlayers) {
-                const p = remotePlayers[id].mesh;
-                miniCtx.beginPath();
-                miniCtx.arc(p.position.x * MAP_SCALE + MAP_CENTER, p.position.z * MAP_SCALE + MAP_CENTER, 2.0, 0, Math.PI * 2);
-                miniCtx.fill();
-            }
-
-            const carMapX = car.position.x * MAP_SCALE + MAP_CENTER;
-            const carMapZ = car.position.z * MAP_SCALE + MAP_CENTER;
-            miniCtx.save();
-            miniCtx.translate(carMapX, carMapZ);
-            miniCtx.rotate(-car.rotation.y + Math.PI); 
-            miniCtx.fillStyle = '#FF0000';
-            miniCtx.beginPath();
-            miniCtx.moveTo(0, -7); miniCtx.lineTo(4, 4); miniCtx.lineTo(-4, 4);
-            miniCtx.closePath(); miniCtx.fill();
-            miniCtx.restore();
+        // --- INTERACTIVE UI TRIGGERS ---
+        function toggleShop() {
+            const shop = document.getElementById('upgrade_shop');
+            shop.style.display = shop.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('shop_cash').innerText = playerCash;
         }
 
-        // --- 7. KEYBOARD ROUTINES ---
-        const keys = { w: false, a: false, s: false, d: false };
-        window.addEventListener('keydown', (e) => { 
-            if(!gameActive) return;
-            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; 
+        window.buyUpgrade = function(type) {
+            let cost = type === 'speed' ? upgradeTiers.speed * 150 : upgradeTiers.grip * 200;
+            if(playerCash >= cost) {
+                playerCash -= cost;
+                upgradeTiers[type]++;
+                document.getElementById('hud_cash').innerText = playerCash;
+                document.getElementById('shop_cash').innerText = playerCash;
+                document.getElementById('tier_speed').innerText = upgradeTiers.speed;
+                document.getElementById('tier_grip').innerText = upgradeTiers.grip;
+                document.getElementById(`lbl_${type}`).innerText = "Tier " + upgradeTiers[type];
+            }
+        };
+
+        // UI Key Handling
+        window.addEventListener('keydown', (e) => {
+            if(document.activeElement === document.getElementById('chat_input')) {
+                if(e.key === 'Enter') sendChatMessage();
+                return;
+            }
+            if(e.key.toLowerCase() === 'p') toggleShop();
+            if(e.key === 'Enter') document.getElementById('chat_input').focus();
+            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true;
         });
-        window.addEventListener('keyup', (e) => { 
-            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; 
+        window.addEventListener('keyup', (e) => {
+            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false;
         });
 
-        let lastNetworkTick = 0;
+        function sendChatMessage() {
+            const inp = document.getElementById('chat_input');
+            const msg = inp.value.trim();
+            inp.value = ""; inp.blur();
+            if(!msg) return;
+            
+            if(window.network) {
+                window.network.push(window.network.chatRef, { name: playerDisplayName, msg: msg, time: Date.now() });
+            } else {
+                showLocalBubble(playerDisplayName, msg);
+            }
+        }
 
-        // --- 8. GLOBAL RENDER ANIMATION TICK ---
-        function animate(timestamp) {
+        function showLocalBubble(sender, text) {
+            if(sender === playerDisplayName) {
+                scene.remove(localCar.tag);
+                localCar.tag = createDynamicTag(playerDisplayName, text);
+                localCar.mesh.add(localCar.tag);
+                setTimeout(() => {
+                    scene.remove(localCar.tag);
+                    localCar.tag = createDynamicTag(playerDisplayName);
+                    localCar.mesh.add(localCar.tag);
+                }, 4000);
+            }
+            const log = document.getElementById('chat_logs');
+            log.innerHTML += `<div><b>${sender}:</b> ${text}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // --- ENGINE TICK ANIMATION LOOP ---
+        let lastNetTime = 0;
+        function animate(time) {
             requestAnimationFrame(animate);
 
             if (gameActive) {
+                // Adjust performance parameters based on active upgrades
+                const maxSpeed = 1.3 + (upgradeTiers.speed * 0.15);
+                const turnSpeed = 0.032 + (upgradeTiers.grip * 0.005);
+
                 const groundY = getHeight(car.position.x, car.position.z);
-                const dirX = Math.sin(rotation);
-                const dirZ = Math.cos(rotation);
-
-                const checkDist = 1.5;
-                const nextGroundY = getHeight(car.position.x + dirX * checkDist, car.position.z + dirZ * checkDist);
-                const slopeGrade = nextGroundY - groundY; 
-
-                const dynamicMaxSpeed = BASE_MAX_SPEED - (slopeGrade * 0.8); 
-                let slopeGravityForce = -slopeGrade * 0.008; 
                 
-                let turnFriction = 0;
-                if (Math.abs(speed) > 0.1) {
-                    if (keys.a || keys.d) {
-                        turnFriction = Math.abs(speed) * 0.015;
-                    }
-                }
+                if (keys.w) speed = Math.min(speed + 0.005, maxSpeed);
+                else if (keys.s) speed = Math.max(speed - 0.02, -0.5);
+                else speed *= 0.98;
 
-                if (keys.w) {
-                    speed += ACCELERATION + slopeGravityForce;
-                    if (speed > dynamicMaxSpeed) {
-                        speed = THREE.MathUtils.lerp(speed, dynamicMaxSpeed, 0.05);
-                    }
-                } else if (keys.s) {
-                    speed = Math.max(speed - 0.02, -0.4);
-                } else {
-                    speed *= 0.985;
-                    speed += slopeGravityForce;
-                }
-
-                if (speed > 0) speed = Math.max(speed - turnFriction, 0);
-                if (speed < 0) speed = Math.min(speed + turnFriction, 0);
-
-                if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
-                if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
+                if (keys.a) rotation += turnSpeed * (speed >= 0 ? 1 : -0.6);
+                if (keys.d) rotation -= turnSpeed * (speed >= 0 ? 1 : -0.6);
 
                 car.rotation.y = rotation;
                 car.translateZ(speed);
 
-                const wheelSpinDelta = speed * 1.5;
-                localCarData.wheels.forEach(w => w.rotation.x += wheelSpinDelta);
+                // --- 3D SURFACE HILL ROTATION ALIGNMENT ---
+                const offsetRadius = 1.5;
+                const frontY = getHeight(car.position.x + Math.sin(rotation)*offsetRadius, car.position.z + Math.cos(rotation)*offsetRadius);
+                const backY = getHeight(car.position.x - Math.sin(rotation)*offsetRadius, car.position.z - Math.cos(rotation)*offsetRadius);
+                const leftY = getHeight(car.position.x + Math.sin(rotation + Math.PI/2)*offsetRadius, car.position.z + Math.cos(rotation + Math.PI/2)*offsetRadius);
+                const rightY = getHeight(car.position.x + Math.sin(rotation - Math.PI/2)*offsetRadius, car.position.z + Math.cos(rotation - Math.PI/2)*offsetRadius);
 
-                // Tree collisions
-                for (let i = 0; i < trees.length; i++) {
-                    const tree = trees[i];
-                    const dx = car.position.x - tree.x;
-                    const dz = car.position.z - tree.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
+                // Map pitch and roll terrain slopes
+                const pitchAngle = Math.atan2(backY - frontY, offsetRadius * 2);
+                const rollAngle = Math.atan2(leftY - rightY, offsetRadius * 2);
 
-                    if (distance < tree.radius) {
-                        speed = -speed * 0.4; 
-                        const pushX = (dx / distance) * (tree.radius - distance + 0.1);
-                        const pushZ = (dz / distance) * (tree.radius - distance + 0.1);
-                        car.position.x += pushX;
-                        car.position.z += pushZ;
-                    }
-                }
-
-                // Airborne logic
-                const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
-                let isAirborne = false;
-
-                if (currentVehicleFloor > groundY + 0.1) {
-                    verticalVelocity -= GRAVITY;
-                    document.getElementById('airtime').style.display = 'inline';
-                    isAirborne = true;
+                // Handle gravity & airborne mechanics
+                if (car.position.y > groundY + 0.2) {
+                    verticalVelocity -= 0.008;
+                    document.getElementById('airtime').style.display = 'block';
+                    if(Math.abs(verticalVelocity) > 0.05) playerCash += 1; 
                 } else {
                     document.getElementById('airtime').style.display = 'none';
-                    
-                    const launchCheckY = getHeight(car.position.x + dirX * speed, car.position.z + dirZ * speed);
-                    const launchDelta = launchCheckY - groundY;
-
-                    if (launchDelta < -1.2 && speed > 0.6) { 
-                        verticalVelocity = speed * 0.12; 
-                        isAirborne = true;
+                    if (frontY - groundY < -1.5 && speed > 0.9) {
+                        verticalVelocity = speed * 0.15;
                     } else {
                         verticalVelocity = 0;
-                        car.position.y = groundY + CAR_HEIGHT_OFFSET;
+                        car.position.y = groundY;
                     }
                 }
-
                 car.position.y += verticalVelocity;
 
-                if (car.position.y < groundY + CAR_HEIGHT_OFFSET) {
-                    car.position.y = groundY + CAR_HEIGHT_OFFSET;
-                    verticalVelocity = 0;
-                    isAirborne = false;
-                }
+                // Smoothly update terrain tracking containers
+                localCar.container.rotation.x = THREE.MathUtils.lerp(localCar.container.rotation.x, pitchAngle, 0.2);
+                localCar.container.rotation.z = THREE.MathUtils.lerp(localCar.container.rotation.z, rollAngle, 0.2);
 
-                // Slope Pitch
-                if (!isAirborne) {
-                    const lookDist = 2.0;
-                    const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
-                    const backY = getHeight(car.position.x - dirX * lookDist, car.position.z - dirZ * lookDist);
+                localCar.wheels.forEach(w => w.rotation.x += speed * 1.2);
+                document.getElementById('hud_cash').innerText = playerCash;
 
-                    const pitchAngle = Math.atan2(backY - frontY, lookDist * 2);
-                    carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, pitchAngle, 0.15);
-                } else {
-                    carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
-                }
+                // Tree Boundaries
+                trees.forEach(t => {
+                    let d = Math.hypot(car.position.x - t.x, car.position.z - t.z);
+                    if(d < t.radius) {
+                        speed = -speed * 0.5;
+                        car.position.x += ((car.position.x - t.x)/d) * 0.5;
+                    }
+                });
 
-                if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
-                if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
-                if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
-                if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
+                // --- AI AGENT INTELLIGENT SIMULATION ---
+                aiDrivers.forEach(ai => {
+                    let aiGroundY = getHeight(ai.mesh.position.x, ai.mesh.position.z);
+                    let dx = ai.targetX - ai.mesh.position.x;
+                    let dz = ai.targetZ - ai.mesh.position.z;
+                    let dist = Math.hypot(dx, dz);
 
-                // Push updates to Firebase
-                if (window.network && timestamp - lastNetworkTick > 33) {
-                    lastNetworkTick = timestamp;
+                    if(dist < 20) {
+                        ai.targetX = (Math.random()-0.5)*700;
+                        ai.targetZ = (Math.random()-0.5)*700;
+                    }
+
+                    let targetRot = Math.atan2(dx, dz);
+                    let diff = targetRot - ai.rotY;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    ai.rotY += Math.sign(diff) * 0.02;
+
+                    ai.mesh.rotation.y = ai.rotY;
+                    ai.mesh.translateZ(ai.speed);
+                    ai.mesh.position.y = aiGroundY;
+
+                    // AI Terrain Alignment
+                    let aiF = getHeight(ai.mesh.position.x + Math.sin(ai.rotY)*1.5, ai.mesh.position.z + Math.cos(ai.rotY)*1.5);
+                    let aiB = getHeight(ai.mesh.position.x - Math.sin(ai.rotY)*1.5, ai.mesh.position.z - Math.cos(ai.rotY)*1.5);
+                    ai.container.rotation.x = Math.atan2(aiB - aiF, 3.0);
+
+                    ai.wheels.forEach(w => w.rotation.x += ai.speed);
+                });
+
+                // Network snapshot sync stream
+                if (window.network && time - lastNetTime > 40) {
+                    lastNetTime = time;
                     window.network.set(window.network.playerRef, {
-                        x: car.position.x,
-                        y: car.position.y,
-                        z: car.position.z,
-                        rotY: car.rotation.y,
-                        rotX: carChassisContainer.rotation.x,
-                        speed: speed,
-                        name: playerDisplayName,
-                        color: playerSelectedColor // Hex value tracks over network stream smoothly
+                        x: car.position.x, y: car.position.y, z: car.position.z,
+                        rotY: rotation, rotX: localCar.container.rotation.x, rotZ: localCar.container.rotation.z,
+                        speed: speed, name: playerDisplayName, color: playerSelectedColor
                     });
                 }
             }
 
-            const relativeCameraOffset = new THREE.Vector3(0, 6.0, -15);
-            const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
-            camera.position.lerp(cameraOffset, 0.08); 
-            camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 0.8, car.position.z));
+            // Camera Tracking
+            let camOffset = new THREE.Vector3(0, 5.5, -13).applyMatrix4(car.matrixWorld);
+            camera.position.lerp(camOffset, 0.1);
+            camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 0.5, car.position.z));
 
-            // Remote vehicle interpolation
+            // Interpolate remote player updates
             for (let id in remotePlayers) {
-                const pData = remotePlayers[id];
-                pData.mesh.position.lerp(pData.targetPosition, 0.15);
-                pData.mesh.rotation.y = THREE.MathUtils.lerp(pData.mesh.rotation.y, pData.targetRotationY, 0.15);
-                pData.container.rotation.x = THREE.MathUtils.lerp(pData.container.rotation.x, pData.targetRotationX, 0.15);
-                
-                const remoteWheelSpin = pData.speed * 1.5;
-                pData.wheels.forEach(w => w.rotation.x += remoteWheelSpin);
+                let r = remotePlayers[id];
+                r.mesh.position.lerp(r.tPos, 0.2);
+                r.mesh.rotation.y = THREE.MathUtils.lerp(r.mesh.rotation.y, r.tRotY, 0.2);
+                r.container.rotation.x = THREE.MathUtils.lerp(r.container.rotation.x, r.tRotX, 0.2);
+                r.container.rotation.z = THREE.MathUtils.lerp(r.container.rotation.z, r.tRotZ, 0.2);
             }
 
-            // --- REVERSE MATH FIXED TO SHOW POSITIVE ---
-            const currentMph = Math.round(Math.abs(speed) * 100);
-            document.getElementById('speed_digital').innerText = currentMph;
-
-            const gCanvas = document.getElementById('gauge_canvas');
-            const gCtx = gCanvas.getContext('2d');
-            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
-
-            const speedPct = Math.min(Math.abs(speed) / BASE_MAX_SPEED, 1.2); 
-            const centerX = gCanvas.width / 2;
-            const centerY = gCanvas.height / 2;
-            const radius = 90;
-            const startAngle = 0.75 * Math.PI; 
-            const endAngle = 2.25 * Math.PI;   
-            const dynamicEndAngle = startAngle + (endAngle - startAngle) * Math.min(speedPct, 1.0);
-
-            gCtx.beginPath();
-            gCtx.arc(centerX, centerY, radius, startAngle, endAngle);
-            gCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            gCtx.lineWidth = 8;
-            gCtx.lineCap = 'round';
-            gCtx.stroke();
-
-            gCtx.beginPath();
-            gCtx.arc(centerX, centerY, radius, startAngle, dynamicEndAngle);
+            // HUD Gauges Renderer Engine
+            document.getElementById('speed_digital').innerText = Math.round(Math.abs(speed) * 95);
+            const gCtx = document.getElementById('gauge_canvas').getContext('2d');
+            gCtx.clearRect(0,0,180,180);
+            gCtx.beginPath(); gCtx.arc(90, 90, 75, 0.75*Math.PI, 2.25*Math.PI);
+            gCtx.strokeStyle = 'rgba(255,255,255,0.1)'; gCtx.lineWidth = 6; gCtx.stroke();
             
-            const gradient = gCtx.createLinearGradient(0, centerY + radius, gCanvas.width, centerY);
-            gradient.addColorStop(0, '#00bfff'); 
-            gradient.addColorStop(0.6, '#ff00ff'); 
-            gradient.addColorStop(1, '#ff1133'); 
-            
-            gCtx.strokeStyle = gradient;
-            gCtx.lineWidth = 10;
-            gCtx.lineCap = 'round';
-            gCtx.shadowBlur = 12;
-            gCtx.shadowColor = speedPct > 0.85 ? '#ff1133' : '#00bfff';
-            gCtx.stroke();
-            gCtx.shadowBlur = 0;
+            gCtx.beginPath();
+            let pEnd = 0.75*Math.PI + (1.5*Math.PI)*Math.min(Math.abs(speed)/2, 1.0);
+            gCtx.arc(90, 90, 75, 0.75*Math.PI, pEnd);
+            gCtx.strokeStyle = '#00bfff'; gCtx.lineWidth = 8; gCtx.stroke();
 
-            drawMinimap();
+            // Minimap Draw Engine
+            const mCtx = document.getElementById('minimap_canvas').getContext('2d');
+            mCtx.clearRect(0,0,200,200);
+            mCtx.fillStyle = 'rgba(255,255,255,0.2)';
+            aiDrivers.forEach(ai => mCtx.fillRect(ai.mesh.position.x*MAP_SCALE+MAP_CENTER, ai.mesh.position.z*MAP_SCALE+MAP_CENTER, 3, 3));
+            mCtx.fillStyle = '#ff00ff';
+            mCtx.fillRect(car.position.x*MAP_SCALE+MAP_CENTER, car.position.z*MAP_SCALE+MAP_CENTER, 5, 5);
+
             renderer.render(scene, camera);
         }
 
-        // --- 9. LISTEN FOR NETWORK CLIENT CONNECTIONS ---
-        const setupNetworkHooks = setInterval(() => {
-            if (window.network) {
-                clearInterval(setupNetworkHooks);
-                
-                const { ref, db, onValue } = window.network;
-                const playersRef = ref(db, 'players');
-                
-                onValue(playersRef, (snapshot) => {
-                    const data = snapshot.val();
-                    if (!data) return;
+        // --- MULTIPLAYER AND CHAT SYNC SYSTEM ---
+        const initNetwork = setInterval(() => {
+            if(window.network) {
+                clearInterval(initNetwork);
+                const { ref, db, onValue, chatRef } = window.network;
 
-                    for (let id in data) {
-                        if (id === window.network.playerId) continue; 
-
-                        const p = data[id];
-                        if (!remotePlayers[id]) {
-                            // Spawn multiplayer opponents with their exact custom color wheel selection code synced!
-                            const targetColorHex = p.color || "#00ffcc";
-                            const newCar = createCarModel(targetColorHex, 0xff1133, p.name || "Opponent");
-                            scene.add(newCar.mesh);
-                            
-                            remotePlayers[id] = {
-                                mesh: newCar.mesh,
-                                container: newCar.container,
-                                wheels: newCar.wheels,
-                                targetPosition: new THREE.Vector3(p.x, p.y, p.z),
-                                targetRotationY: p.rotY,
-                                targetRotationX: p.rotX,
-                                speed: p.speed,
-                                color: targetColorHex
-                            };
+                // Watch multiplayer players array
+                onValue(ref(db, 'players'), (snap) => {
+                    const data = snap.val(); if(!data) return;
+                    for(let id in data) {
+                        if(id === window.network.playerId) continue;
+                        let p = data[id];
+                        if(!remotePlayers[id]) {
+                            let rModel = createCarModel(p.color, p.name);
+                            scene.add(rModel.mesh);
+                            remotePlayers[id] = { ...rModel, tPos: new THREE.Vector3(p.x, p.y, p.z), tRotY: p.rotY, tRotX: p.rotX, tRotZ: p.rotZ };
                         } else {
-                            // Dynamically rebuild opponent vehicle if they swapped paint properties seamlessly
-                            if (remotePlayers[id].color !== p.color) {
-                                scene.remove(remotePlayers[id].mesh);
-                                const updatedColorHex = p.color || "#00ffcc";
-                                const remountedCar = createCarModel(updatedColorHex, 0xff1133, p.name || "Opponent");
-                                scene.add(remountedCar.mesh);
-                                
-                                remotePlayers[id].mesh = remountedCar.mesh;
-                                remotePlayers[id].container = remountedCar.container;
-                                remotePlayers[id].wheels = remountedCar.wheels;
-                                remotePlayers[id].color = updatedColorHex;
-                            }
-
-                            remotePlayers[id].targetPosition.set(p.x, p.y, p.z);
-                            remotePlayers[id].targetRotationY = p.rotY;
-                            remotePlayers[id].targetRotationX = p.rotX;
-                            remotePlayers[id].speed = p.speed;
+                            remotePlayers[id].tPos.set(p.x, p.y, p.z);
+                            remotePlayers[id].tRotY = p.rotY; remotePlayers[id].tRotX = p.rotX; remotePlayers[id].tRotZ = p.rotZ;
                         }
                     }
+                });
 
-                    for (let id in remotePlayers) {
-                        if (!data[id]) {
-                            scene.remove(remotePlayers[id].mesh);
-                            delete remotePlayers[id];
-                        }
+                // Global Chat synchronization stream listener loop
+                onValue(chatRef, (snap) => {
+                    const data = snap.val(); if(!data) return;
+                    const keys = Object.keys(data);
+                    const latest = data[keys[keys.length - 1]];
+                    if(latest && latest.time > Date.now() - 2000) {
+                        showLocalBubble(latest.name, latest.msg);
                     }
                 });
 
@@ -771,23 +561,14 @@
             }
         }, 100);
 
-        // --- SIGN IN UI ACTIONS ENGINE ---
         document.getElementById('join_btn').addEventListener('click', () => {
-            const inputVal = document.getElementById('username_input').value.trim();
-            if(inputVal.length > 0) {
-                playerDisplayName = inputVal;
-            }
-            
-            // Capture custom input wheel payload value directly
+            let nick = document.getElementById('username_input').value.trim();
+            if(nick) playerDisplayName = nick;
             playerSelectedColor = document.getElementById('color_wheel').value;
-            
-            // Re-render local car configuration shell utilizing color wheels value
+
             scene.remove(car);
-            localCarData = createCarModel(playerSelectedColor, 0xffcc00, playerDisplayName);
-            car = localCarData.mesh;
-            carChassisContainer = localCarData.container;
-            scene.add(car);
-            car.position.set((Math.random() - 0.5) * 60, 20, (Math.random() - 0.5) * 60);
+            localCar = createCarModel(playerSelectedColor, playerDisplayName);
+            car = localCar.mesh; scene.add(car); car.position.set(0, 10, 0);
 
             document.getElementById('auth_overlay').style.display = 'none';
             gameActive = true;

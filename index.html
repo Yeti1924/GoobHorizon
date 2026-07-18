@@ -474,9 +474,10 @@
 
                     const totalAirTimeSeconds = (Date.now() - airTimeStart) / 1000;
                     
-                    if (Date.now() - lastMultiplierTick >= 5000) {
+                    // MODIFIED: Checked every 1000ms (1 second) instead of 5000ms, and explicitly awards +$20 cash
+                    if (Date.now() - lastMultiplierTick >= 1000) {
                         activeMultiplier += 1;
-                        playerCash *= activeMultiplier; 
+                        playerCash += 20; 
                         lastMultiplierTick = Date.now();
                     }
 

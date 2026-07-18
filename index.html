@@ -6,6 +6,85 @@
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
+        /* --- SIGN IN SCREEN OVERLAY --- */
+        #auth_overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #0d0d1a 0%, #05050a 100%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .auth-container {
+            background: rgba(20, 20, 35, 0.85);
+            padding: 40px;
+            border-radius: 16px;
+            border: 2px solid #ff1133;
+            box-shadow: 0 0 30px rgba(255, 17, 51, 0.3), inset 0 0 20px rgba(0, 191, 255, 0.1);
+            text-align: center;
+            width: 340px;
+        }
+
+        .auth-container h1 {
+            font-size: 32px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #ff1133, #00bfff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-container p {
+            font-size: 14px;
+            color: #8a8ab0;
+            margin-bottom: 25px;
+        }
+
+        .auth-container input {
+            width: 100%;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 191, 255, 0.4);
+            background: rgba(10, 10, 20, 0.6);
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            text-align: center;
+        }
+
+        .auth-container input:focus {
+            border-color: #00bfff;
+            box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+        }
+
+        .auth-container button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #ff1133, #ff00ff);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 17, 51, 0.4);
+            transition: all 0.2s;
+        }
+
+        .auth-container button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 17, 51, 0.6);
+        }
+
+        /* --- DASHBOARD GAME UI --- */
         #dashboard {
             position: absolute;
             bottom: 25px;
@@ -111,6 +190,16 @@
 </head>
 <body>
 
+    <!-- SIGN IN GATE OVERLAY -->
+    <div id="auth_overlay">
+        <div class="auth-container">
+            <h1>Goob Horizon</h1>
+            <p>Hypercar Multiplayer Edition</p>
+            <input type="text" id="username_input" placeholder="Enter Driver Name..." maxlength="14" value="Driver">
+            <button id="join_btn">Join Race</button>
+        </div>
+    </div>
+
     <div id="dashboard">
         <span id="airtime" style="display: none;">Big Air Time!</span>
         <canvas id="gauge_canvas" width="220" height="220"></canvas>
@@ -122,6 +211,9 @@
     
     <script>
         // --- 1. SETUP ENGINE ---
+        let gameActive = false;
+        let playerDisplayName = "Driver";
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -161,7 +253,7 @@
         // --- 3. POPULATE COLLIDABLE TREES ---
         const trees = [];
         const TREE_COUNT = 450;
-        const COLLISION_RADIUS = 3.5; // Increased to factor in bigger car boundary widths
+        const COLLISION_RADIUS = 3.5;
         
         const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9 });
         const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x1e5c1e, flatShading: true, roughness: 0.7 });
@@ -186,12 +278,38 @@
             trees.push({ x: pseudoX, z: pseudoZ, radius: COLLISION_RADIUS });
         }
 
+        // --- NAME TAG CANVAS FACTORY ---
+        function createNameTag(nameString) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = 'rgba(10, 10, 20, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#00bfff';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = 'Bold 24px sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(nameString, canvas.width / 2, canvas.height / 2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(6, 1.5, 1);
+            sprite.position.y = 3.2; // Hover height over hypercar roof
+            return sprite;
+        }
+
         // --- 4. ADVANCED HYPERCAR MODEL DESIGN FACTORY ---
-        function createCarModel(colorHex, accentHex = 0x00bfff) {
+        function createCarModel(colorHex, accentHex = 0x00bfff, driverName = "") {
             const group = new THREE.Group();
             const chassisContainer = new THREE.Group();
             
-            // Premium Materials definitions
             const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.8, roughness: 0.15 });
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.05, transparent: true, opacity: 0.85 });
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.7 });
@@ -199,7 +317,7 @@
             const neonMat = new THREE.MeshBasicMaterial({ color: accentHex });
             const darkMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
 
-            // 1. Lower Main Chassis Base (Scaled up)
+            // 1. Lower Main Chassis Base
             const bodyBase = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.6, 6.5), bodyMat);
             bodyBase.position.y = 0.5;
             chassisContainer.add(bodyBase);
@@ -242,7 +360,7 @@
             lightR.position.x = -1.2;
             chassisContainer.add(lightL, lightR);
 
-            // 7. Aggressive Custom Rims & Wheels Subassembly
+            // 7. Wheels Subassembly
             const wheelGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.6, 16);
             wheelGeom.rotateZ(Math.PI / 2); 
 
@@ -254,7 +372,6 @@
                 const tireMesh = new THREE.Mesh(wheelGeom, wheelMat);
                 const rimMesh = new THREE.Mesh(rimGeom, rimMat);
                 
-                // Add a small neon center hub cap line accent
                 const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.7, 8), neonMat);
                 cap.rotateZ(Math.PI / 2);
                 
@@ -270,19 +387,23 @@
 
             chassisContainer.add(fl, fr, rl, rr);
             group.add(chassisContainer);
+
+            // Optional Floating Tag
+            if (driverName) {
+                const tag = createNameTag(driverName);
+                group.add(tag);
+            }
             
             return { mesh: group, container: chassisContainer, wheels: [fl, fr, rl, rr] };
         }
 
-        // Host vehicle (Neon Red Player Model)
-        const localCarData = createCarModel(0xff1133, 0xffcc00);
-        const car = localCarData.mesh;
-        const carChassisContainer = localCarData.container;
+        // Initialize Local Car Assembly Shell
+        let localCarData = createCarModel(0xff1133, 0xffcc00);
+        let car = localCarData.mesh;
+        let carChassisContainer = localCarData.container;
         scene.add(car);
         
         car.position.set((Math.random() - 0.5) * 60, 20, (Math.random() - 0.5) * 60);
-        
-        // Pulled camera back slightly to adjust viewport scale for the larger hypercar body
         camera.position.set(0, 6.5, -16);
 
         const remotePlayers = {};
@@ -331,8 +452,13 @@
 
         // --- 7. KEYBOARD ROUTINES ---
         const keys = { w: false, a: false, s: false, d: false };
-        window.addEventListener('keydown', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
-        window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
+        window.addEventListener('keydown', (e) => { 
+            if(!gameActive) return;
+            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; 
+        });
+        window.addEventListener('keyup', (e) => { 
+            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; 
+        });
 
         let lastNetworkTick = 0;
 
@@ -340,114 +466,129 @@
         function animate(timestamp) {
             requestAnimationFrame(animate);
 
-            const groundY = getHeight(car.position.x, car.position.z);
-            const dirX = Math.sin(rotation);
-            const dirZ = Math.cos(rotation);
+            if (gameActive) {
+                const groundY = getHeight(car.position.x, car.position.z);
+                const dirX = Math.sin(rotation);
+                const dirZ = Math.cos(rotation);
 
-            const checkDist = 1.5; // Scaled ahead prediction
-            const nextGroundY = getHeight(car.position.x + dirX * checkDist, car.position.z + dirZ * checkDist);
-            const slopeGrade = nextGroundY - groundY; 
+                const checkDist = 1.5;
+                const nextGroundY = getHeight(car.position.x + dirX * checkDist, car.position.z + dirZ * checkDist);
+                const slopeGrade = nextGroundY - groundY; 
 
-            const dynamicMaxSpeed = BASE_MAX_SPEED - (slopeGrade * 0.8); 
-            let slopeGravityForce = -slopeGrade * 0.008; 
-            
-            let turnFriction = 0;
-            if (Math.abs(speed) > 0.1) {
-                if (keys.a || keys.d) {
-                    turnFriction = Math.abs(speed) * 0.015;
-                }
-            }
-
-            if (keys.w) {
-                speed += ACCELERATION + slopeGravityForce;
-                if (speed > dynamicMaxSpeed) {
-                    speed = THREE.MathUtils.lerp(speed, dynamicMaxSpeed, 0.05);
-                }
-            } else if (keys.s) {
-                speed = Math.max(speed - 0.02, -0.4);
-            } else {
-                speed *= 0.985;
-                speed += slopeGravityForce;
-            }
-
-            if (speed > 0) speed = Math.max(speed - turnFriction, 0);
-            if (speed < 0) speed = Math.min(speed + turnFriction, 0);
-
-            if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
-            if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
-
-            car.rotation.y = rotation;
-            car.translateZ(speed);
-
-            // Animate rolling rotating wheels setup
-            const wheelSpinDelta = speed * 1.5;
-            localCarData.wheels.forEach(w => w.rotation.x += wheelSpinDelta);
-
-            // Tree collisions
-            for (let i = 0; i < trees.length; i++) {
-                const tree = trees[i];
-                const dx = car.position.x - tree.x;
-                const dz = car.position.z - tree.z;
-                const distance = Math.sqrt(dx * dx + dz * dz);
-
-                if (distance < tree.radius) {
-                    speed = -speed * 0.4; 
-                    const pushX = (dx / distance) * (tree.radius - distance + 0.1);
-                    const pushZ = (dz / distance) * (tree.radius - distance + 0.1);
-                    car.position.x += pushX;
-                    car.position.z += pushZ;
-                }
-            }
-
-            // Airborne logic
-            const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
-            let isAirborne = false;
-
-            if (currentVehicleFloor > groundY + 0.1) {
-                verticalVelocity -= GRAVITY;
-                document.getElementById('airtime').style.display = 'inline';
-                isAirborne = true;
-            } else {
-                document.getElementById('airtime').style.display = 'none';
+                const dynamicMaxSpeed = BASE_MAX_SPEED - (slopeGrade * 0.8); 
+                let slopeGravityForce = -slopeGrade * 0.008; 
                 
-                const launchCheckY = getHeight(car.position.x + dirX * speed, car.position.z + dirZ * speed);
-                const launchDelta = launchCheckY - groundY;
+                let turnFriction = 0;
+                if (Math.abs(speed) > 0.1) {
+                    if (keys.a || keys.d) {
+                        turnFriction = Math.abs(speed) * 0.015;
+                    }
+                }
 
-                if (launchDelta < -1.2 && speed > 0.6) { 
-                    verticalVelocity = speed * 0.12; 
+                if (keys.w) {
+                    speed += ACCELERATION + slopeGravityForce;
+                    if (speed > dynamicMaxSpeed) {
+                        speed = THREE.MathUtils.lerp(speed, dynamicMaxSpeed, 0.05);
+                    }
+                } else if (keys.s) {
+                    speed = Math.max(speed - 0.02, -0.4);
+                } else {
+                    speed *= 0.985;
+                    speed += slopeGravityForce;
+                }
+
+                if (speed > 0) speed = Math.max(speed - turnFriction, 0);
+                if (speed < 0) speed = Math.min(speed + turnFriction, 0);
+
+                if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
+                if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
+
+                car.rotation.y = rotation;
+                car.translateZ(speed);
+
+                const wheelSpinDelta = speed * 1.5;
+                localCarData.wheels.forEach(w => w.rotation.x += wheelSpinDelta);
+
+                // Tree collisions
+                for (let i = 0; i < trees.length; i++) {
+                    const tree = trees[i];
+                    const dx = car.position.x - tree.x;
+                    const dz = car.position.z - tree.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+
+                    if (distance < tree.radius) {
+                        speed = -speed * 0.4; 
+                        const pushX = (dx / distance) * (tree.radius - distance + 0.1);
+                        const pushZ = (dz / distance) * (tree.radius - distance + 0.1);
+                        car.position.x += pushX;
+                        car.position.z += pushZ;
+                    }
+                }
+
+                // Airborne logic
+                const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
+                let isAirborne = false;
+
+                if (currentVehicleFloor > groundY + 0.1) {
+                    verticalVelocity -= GRAVITY;
+                    document.getElementById('airtime').style.display = 'inline';
                     isAirborne = true;
                 } else {
-                    verticalVelocity = 0;
+                    document.getElementById('airtime').style.display = 'none';
+                    
+                    const launchCheckY = getHeight(car.position.x + dirX * speed, car.position.z + dirZ * speed);
+                    const launchDelta = launchCheckY - groundY;
+
+                    if (launchDelta < -1.2 && speed > 0.6) { 
+                        verticalVelocity = speed * 0.12; 
+                        isAirborne = true;
+                    } else {
+                        verticalVelocity = 0;
+                        car.position.y = groundY + CAR_HEIGHT_OFFSET;
+                    }
+                }
+
+                car.position.y += verticalVelocity;
+
+                if (car.position.y < groundY + CAR_HEIGHT_OFFSET) {
                     car.position.y = groundY + CAR_HEIGHT_OFFSET;
+                    verticalVelocity = 0;
+                    isAirborne = false;
+                }
+
+                // Slope Pitch
+                if (!isAirborne) {
+                    const lookDist = 2.0;
+                    const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
+                    const backY = getHeight(car.position.x - dirX * lookDist, car.position.z - dirZ * lookDist);
+
+                    const pitchAngle = Math.atan2(backY - frontY, lookDist * 2);
+                    carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, pitchAngle, 0.15);
+                } else {
+                    carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
+                }
+
+                if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
+                if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
+                if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
+                if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
+
+                // Push updates to Firebase
+                if (window.network && timestamp - lastNetworkTick > 33) {
+                    lastNetworkTick = timestamp;
+                    window.network.set(window.network.playerRef, {
+                        x: car.position.x,
+                        y: car.position.y,
+                        z: car.position.z,
+                        rotY: car.rotation.y,
+                        rotX: carChassisContainer.rotation.x,
+                        speed: speed,
+                        name: playerDisplayName
+                    });
                 }
             }
 
-            car.position.y += verticalVelocity;
-
-            if (car.position.y < groundY + CAR_HEIGHT_OFFSET) {
-                car.position.y = groundY + CAR_HEIGHT_OFFSET;
-                verticalVelocity = 0;
-                isAirborne = false;
-            }
-
-            // Slope Pitch
-            if (!isAirborne) {
-                const lookDist = 2.0;
-                const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
-                const backY = getHeight(car.position.x - dirX * lookDist, car.position.z - dirZ * lookDist);
-
-                const pitchAngle = Math.atan2(backY - frontY, lookDist * 2);
-                carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, pitchAngle, 0.15);
-            } else {
-                carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
-            }
-
-            if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
-            if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
-            if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
-            if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
-
-            // Updated camera tracking offsets for larger model size scale
+            // Camera Tracking stays smooth relative to space positioning
             const relativeCameraOffset = new THREE.Vector3(0, 6.0, -15);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
             camera.position.lerp(cameraOffset, 0.08); 
@@ -462,19 +603,6 @@
                 
                 const remoteWheelSpin = pData.speed * 1.5;
                 pData.wheels.forEach(w => w.rotation.x += remoteWheelSpin);
-            }
-
-            // Push updates to Firebase
-            if (window.network && timestamp - lastNetworkTick > 33) {
-                lastNetworkTick = timestamp;
-                window.network.set(window.network.playerRef, {
-                    x: car.position.x,
-                    y: car.position.y,
-                    z: car.position.z,
-                    rotY: car.rotation.y,
-                    rotX: carChassisContainer.rotation.x,
-                    speed: speed
-                });
             }
 
             // Canvas Speedometer Gauge
@@ -537,8 +665,8 @@
 
                         const p = data[id];
                         if (!remotePlayers[id]) {
-                            // Spawn multiplayer opponents with a clean Electric Teal style
-                            const newCar = createCarModel(0x00ffcc, 0xff1133);
+                            // Spawn multiplayer opponents dynamically with their tagged driver text name
+                            const newCar = createCarModel(0x00ffcc, 0xff1133, p.name || "Opponent");
                             scene.add(newCar.mesh);
                             
                             remotePlayers[id] = {
@@ -566,9 +694,30 @@
                     }
                 });
 
+                // Run baseline visual loops instantly
                 animate(0);
             }
         }, 100);
+
+        // --- SIGN IN UI ACTIONS ENGINE ---
+        document.getElementById('join_btn').addEventListener('click', () => {
+            const inputVal = document.getElementById('username_input').value.trim();
+            if(inputVal.length > 0) {
+                playerDisplayName = inputVal;
+            }
+            
+            // Re-render local hypercar model to incorporate user's custom text tag overlay
+            scene.remove(car);
+            localCarData = createCarModel(0xff1133, 0xffcc00, playerDisplayName);
+            car = localCarData.mesh;
+            carChassisContainer = localCarData.container;
+            scene.add(car);
+            car.position.set((Math.random() - 0.5) * 60, 20, (Math.random() - 0.5) * 60);
+
+            // Close Sign In Panel & Initialize Active State Loops
+            document.getElementById('auth_overlay').style.display = 'none';
+            gameActive = true;
+        });
     </script>
 </body>
 </html>

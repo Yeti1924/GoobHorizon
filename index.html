@@ -2,72 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon Standalone</title>
+    <title>Goob Horizon - Game & Map</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; }
+        #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; pointer-events: none; }
+        
+        /* Minimap Styling */
+        #minimap_canvas {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            background-color: rgba(16, 16, 16, 0.8);
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
     </style>
-    <!-- Include Three.js for 3D Engine -->
+    <!-- Standard Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div id="ui">SPEED: <span id="speed">0</span> MPH</div>
+    <!-- 2D Canvas Layer for the Map -->
+    <canvas id="minimap_canvas" width="200" height="200"></canvas>
+    
     <script>
-        // 1. Setup Scene, Camera, Renderer
+        // --- 1. SETUP THE 3D ENGINE ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x87CEEB); // Sky Blue
         document.body.appendChild(renderer.domElement);
 
-        // 2. Add lighting (Sun and Sky ambiance)
         const light = new THREE.DirectionalLight(0xffffff, 1.2);
         light.position.set(10, 20, 15);
         scene.add(light);
         scene.add(new THREE.AmbientLight(0x404040));
 
-        // 3. Create a Basic Car Mesh (Chassis + 4 Wheels)
-        const car = new THREE.Group();
-        const bodyGeom = new THREE.BoxGeometry(2, 0.6, 4);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, roughness: 0.2 });
-        const body = new THREE.Mesh(bodyGeom, bodyMat);
-        car.add(body);
-        scene.add(car);
+        // --- 2. GENERATE A TERRAIN WITH ROADS ---
+        const WORLD_SIZE = 500;
+        const MAP_SCALE = 200 / WORLD_SIZE; // Conversion factor for the minimap
 
-        // Position Camera behind the vehicle
+        const groundGeom = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 32, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x336633 }); // Dark Green
+        const ground = new THREE.Mesh(groundGeom, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Add visual roads for reference
+        const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222 }); // Asphalt
+        for (let i = 0; i < 5; i++) {
+            const roadH = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 6), roadMat);
+            roadH.rotation.x = -Math.PI / 2;
+            roadH.position.y = 0.01;
+            roadH.position.z = (Math.random() - 0.5) * WORLD_SIZE;
+            scene.add(roadH);
+
+            const roadV = new THREE.Mesh(new THREE.PlaneGeometry(6, WORLD_SIZE), roadMat);
+            roadV.rotation.x = -Math.PI / 2;
+            roadV.position.y = 0.01;
+            roadV.position.x = (Math.random() - 0.5) * WORLD_SIZE;
+            scene.add(roadV);
+        }
+
+        // --- 3. CREATE THE VEHICLE ---
+        const car = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055 });
+        car.add(new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 4), bodyMat)); // Chassis
+        scene.add(car);
         camera.position.set(0, 3, -7);
 
-        // 4. Basic Animation & Keyboard Input Loop
-        const keys = { w: false, a: false, s: false, d: false };
-        window.addEventListener('keydown', (e) => { if(e.key in keys) keys[e.key] = true; });
-        window.addEventListener('keyup', (e) => { if(e.key in keys) keys[e.key] = false; });
+        // --- 4. THE MINIMAP SYSTEM ---
+        const miniCanvas = document.getElementById('minimap_canvas');
+        const miniCtx = miniCanvas.getContext('2d');
+        const MAP_CENTER = 100; // Half of canvas size (200/2)
 
-        let speed = 0;
-        let rotation = 0;
+        function drawMinimap() {
+            // Clear the 2D map
+            miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+            
+            // Draw the car marker (a red triangle) relative to the center of the world map
+            const mapX = car.position.x * MAP_SCALE + MAP_CENTER;
+            const mapZ = car.position.z * MAP_SCALE + MAP_CENTER;
+
+            miniCtx.save();
+            miniCtx.translate(mapX, mapZ);
+            // Flip 3D rotation (Y) to 2D canvas rotation (angle)
+            miniCtx.rotate(-car.rotation.y + Math.PI); 
+
+            // Draw Red Triangle Pointer
+            miniCtx.fillStyle = '#FF0000';
+            miniCtx.beginPath();
+            miniCtx.moveTo(0, -6); // Tip
+            miniCtx.lineTo(4, 4); // Right base
+            miniCtx.lineTo(-4, 4); // Left base
+            miniCtx.closePath();
+            miniCtx.fill();
+            
+            miniCtx.restore();
+        }
+
+        // --- 5. GAME & CONTROLS LOOP ---
+        const keys = { w: false, a: false, s: false, d: false };
+        window.addEventListener('keydown', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
+
+        let speed = 0, rotation = 0;
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Simple physics math
-            if (keys.w) speed = Math.min(speed + 0.01, 0.5);
-            else if (keys.s) speed = Math.max(speed - 0.01, -0.2);
-            else speed *= 0.95; // Friction friction
+            // Arcade Drive Physics
+            if (keys.w) speed = Math.min(speed + 0.01, 0.7); // Accelerate
+            else if (keys.s) speed = Math.max(speed - 0.01, -0.3); // Brake/Reverse
+            else speed *= 0.98; // Friction
 
-            if (keys.a) rotation += 0.03 * (speed / 0.5);
-            if (keys.d) rotation -= 0.03 * (speed / 0.5);
+            if (keys.a) rotation += 0.04 * (speed / 0.7); // Steer Left
+            if (keys.d) rotation -= 0.04 * (speed / 0.7); // Steer Right
 
             car.rotation.y = rotation;
             car.translateZ(speed);
 
-            // Camera follow math
+            // Simple World Boundary Check (Keeps the map functional)
+            if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
+            if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
+            if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
+            if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
+
+            // Camera follow (Smooth Lerp)
             const relativeCameraOffset = new THREE.Vector3(0, 3, -8);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
-            camera.position.x = THREE.MathUtils.lerp(camera.position.x, cameraOffset.x, 0.1);
-            camera.position.y = THREE.MathUtils.lerp(camera.position.y, cameraOffset.y, 0.1);
-            camera.position.z = THREE.MathUtils.lerp(camera.position.z, cameraOffset.z, 0.1);
+            camera.position.lerp(cameraOffset, 0.1);
             camera.lookAt(car.position);
 
-            document.getElementById('speed').innerText = Math.round(speed * 300);
+            // Update UI
+            document.getElementById('speed').innerText = Math.round(speed * 350);
+
+            // 6. EXECUTE THE MAP UPDATE
+            drawMinimap();
+
             renderer.render(scene, camera);
         }
         animate();

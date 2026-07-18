@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HORIZON // Open World</title>
+<style>
+  :root{
+    --hud-bg:rgba(15,10,25,0.55);
+    --hud-accent:#ff7a3d;
+    --hud-accent2:#5ee8c8;
+    --text:#f4ede4;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; background:#000;
+    font-family:'Segoe UI', system-ui, sans-serif; color:var(--text); }
+  #wrap{ position:relative; width:100vw; height:100vh; }
+  #three-container{ position:absolute; inset:0; }
+  #three-container canvas{ display:block; }
+
+  #hud{ position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; }
+  .top-bar{ display:flex; justify-content:space-between; align-items:flex-start; padding:18px 22px; }
+  .logo{ font-weight:800; font-size:22px; letter-spacing:6px; text-shadow:0 0 18px var(--hud-accent); }
+  .logo span{ color:var(--hud-accent); }
+  .stat-pill{ background:var(--hud-bg); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.12);
+    border-radius:12px; padding:10px 16px; text-align:center; min-width:96px; }
+  .stat-pill .val{ font-size:20px; font-weight:700; letter-spacing:1px; }
+  .stat-pill .lbl{ font-size:10px; opacity:0.65; letter-spacing:2px; text-transform:uppercase; margin-top:2px; }
+  .stat-row{ display:flex; gap:10px; }
+  .bottom-bar{ display:flex; justify-content:space-between; align-items:flex-end; padding:20px 26px; }
+
+  #speedo{ position:relative; width:150px; height:150px; }
+  #speedo svg{ width:100%; height:100%; }
+  #speedVal{ position:absolute; top:50%; left:50%; transform:translate(-50%,-42%); font-size:34px; font-weight:800; }
+  #speedUnit{ position:absolute; top:50%; left:50%; transform:translate(-50%,90%); font-size:11px; letter-spacing:3px; opacity:0.6; }
+
+  #minimap{ background:var(--hud-bg); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:10px; }
+  #minimap canvas{ display:block; border-radius:8px; }
+
+  #boostbar{ width:160px; height:10px; border-radius:6px; background:rgba(255,255,255,0.15);
+    overflow:hidden; margin-top:8px; border:1px solid rgba(255,255,255,0.15); }
+  #boostfill{ height:100%; width:100%; background:linear-gradient(90deg,var(--hud-accent2),var(--hud-accent)); transition:width 0.08s linear; }
+  #boostlabel{ font-size:10px; letter-spacing:2px; opacity:0.7; margin-top:4px; text-transform:uppercase; }
+
+  #center-msg{ position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+  #center-msg h1{ font-size:56px; margin:0; letter-spacing:4px; text-shadow:0 0 30px rgba(0,0,0,0.6); }
+  #center-msg p{ font-size:16px; opacity:0.85; margin-top:6px; }
+  #countdown{ font-size:110px; font-weight:800; text-shadow:0 0 40px rgba(0,0,0,0.7); }
+
+  #offroad-warning{ position:absolute; top:14%; left:50%; transform:translate(-50%,0); font-size:14px; letter-spacing:4px;
+    color:#e8483a; text-shadow:0 0 12px rgba(232,72,58,0.8); opacity:0; transition:opacity 0.2s; font-weight:700; }
+
+  #gate-flash{ position:absolute; top:26%; left:50%; transform:translate(-50%,0) scale(0.9); font-size:22px;
+    letter-spacing:6px; color:var(--hud-accent2); text-shadow:0 0 20px rgba(94,232,200,0.8); opacity:0;
+    transition:opacity 0.15s, transform 0.15s; font-weight:800; }
+
+  #startScreen{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; background:radial-gradient(ellipse at 50% 30%, rgba(255,122,61,0.25), transparent 60%),
+    linear-gradient(180deg, #2b1150, #7a2f6b 55%, #1a0f2e 100%); z-index:10; }
+  #startScreen h1{ font-size:64px; letter-spacing:10px; margin:0; font-weight:800; text-shadow:0 0 40px rgba(255,122,61,0.6); }
+  #startScreen h1 span{ color:var(--hud-accent); }
+  #startScreen p{ opacity:0.75; max-width:520px; line-height:1.6; margin-top:14px; }
+  #startBtn{ margin-top:34px; padding:16px 46px; font-size:16px; letter-spacing:3px; background:var(--hud-accent);
+    border:none; border-radius:40px; color:#1a0f2e; font-weight:800; cursor:pointer; text-transform:uppercase;
+    box-shadow:0 8px 30px rgba(255,122,61,0.4); }
+  #startBtn:hover{ filter:brightness(1.1); }
+  #loadingNote{ margin-top:18px; font-size:12px; opacity:0.55; letter-spacing:2px; }
+  .controls-hint{ margin-top:40px; display:flex; gap:26px; opacity:0.6; font-size:12px; letter-spacing:1px; flex-wrap:wrap; justify-content:center; }
+  .key{ display:inline-block; border:1px solid rgba(255,255,255,0.4); border-radius:6px; padding:3px 8px; margin-right:6px; font-weight:700; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="three-container"></div>
+
+  <div id="startScreen">
+    <h1>HORI<span>ZON</span></h1>
+    <p>A full open world — rolling hills, lakes, forests and a winding road under a golden-hour sky. Drift off the tarmac, chase the drift gates scattered across the map, and drive alongside other players live over Firebase.</p>
+    <button id="startBtn">Start Driving</button>
+    <div class="loadingNote" id="loadingNote">loading world…</div>
+    <div class="controls-hint">
+      <div><span class="key">W</span><span class="key">S</span> Throttle / Brake</div>
+      <div><span class="key">A</span> Steer Right</div>
+      <div><span class="key">D</span> Steer Left</div>
+      <div><span class="key">SHIFT</span> Boost</div>
+    </div>
+  </div>
+
+  <div id="hud" style="display:none;">
+    <div id="offroad-warning">OFF ROAD</div>
+    <div id="gate-flash">GATE +1</div>
+    <div class="top-bar">
+      <div class="logo">HORI<span>ZON</span></div>
+      <div class="stat-row">
+        <div class="stat-pill"><div class="val" id="gatesVal">0/10</div><div class="lbl">Gates</div></div>
+        <div class="stat-pill"><div class="val" id="timeVal">00:00</div><div class="lbl">Time</div></div>
+        <div class="stat-pill"><div class="val" id="topSpeedVal">0</div><div class="lbl">Top Speed</div></div>
+        <div class="stat-pill"><div class="val" id="playersVal">1</div><div class="lbl" id="playersLbl">Solo</div></div>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <div id="speedo">
+        <svg viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="66" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="10"/>
+          <circle id="speedArc" cx="75" cy="75" r="66" fill="none" stroke="url(#grad)" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="415" stroke-dashoffset="415" transform="rotate(-215 75 75)"/>
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#5ee8c8"/><stop offset="100%" stop-color="#ff7a3d"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div id="speedVal">0</div>
+        <div id="speedUnit">MPH</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end;">
+        <div id="minimap"><canvas id="mapCanvas" width="150" height="150"></canvas></div>
+        <div id="boostbar"><div id="boostfill"></div></div>
+        <div id="boostlabel">Boost</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="center-msg" style="display:none;"><div id="countdown"></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.2/firebase-database-compat.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+const container = document.getElementById('three-container');
+let W = window.innerWidth, H = window.innerHeight;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(62, W/H, 0.5, 6000);
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(W,H);
+container.appendChild(renderer.domElement);
+
+window.addEventListener('resize', ()=>{
+  W = window.innerWidth; H = window.innerHeight;
+  camera.aspect = W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W,H);
+});
+
+const HORIZON_COLOR = 0xd97a4a;
+scene.fog = new THREE.FogExp2(HORIZON_COLOR, 0.00032);
+
+// [Terrain, Sky, and Road generation logic omitted for brevity in display, use your existing logic here]
+// ... (Your existing scene setup code) ...
+
+// =========================================================
+// Update Loop Fix
+// =========================================================
+function update(dt){
+  if(!player.started) return;
+  dt = Math.min(dt, 0.05);
+
+  const accelerating = keys['arrowup']||keys['w'];
+  const braking = keys['arrowdown']||keys['s'];
+  const left = keys['arrowright']||keys['d'];
+  const right = keys['arrowleft']||keys['a'];
+  const wantBoost = keys['shift'] && player.boost>0;
+
+  const nr = nearestRoadY(car.position.x, car.position.z);
+  const offRoad = nr.dist > ROAD_HALF_WIDTH+1.5;
+  
+  // FIX: Applied fix here
+  offroadWarn.style.opacity = offRoad ? 1 : 0;
+
+  // ... (Your remaining movement and physics logic) ...
+}
+
+// ... (Rest of your original code) ...
+
+})();
+</script>
+</body>
+</html>

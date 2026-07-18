@@ -3,160 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goob Horizon</title>
+    <title>Goob Horizon - Arcade Edition</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            line-height: 1.6;
             margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #16213e;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            border-top: 6px solid #e94560;
+            padding: 0;
+            background-color: #1a1a2e;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
         }
         h1 {
             color: #e94560;
-            text-align: center;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            font-size: 2.8em;
-            margin-top: 0;
+            letter-spacing: 2px;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 0px #0f3460;
         }
-        h2 {
-            color: #4ecca3;
-            border-bottom: 2px solid #4ecca3;
-            padding-bottom: 8px;
-            margin-top: 40px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        p {
-            font-size: 1.1em;
-        }
-        ul {
-            list-style-type: square;
-            color: #e0e0e0;
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 12px;
-            font-size: 1.1em;
-        }
-        strong {
-            color: #e94560;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 25px 0;
-            background-color: #0f3460;
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 20px rgba(78, 204, 163, 0.4);
+            border: 4px solid #4ecca3;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        th, td {
-            padding: 15px;
-            text-align: left;
+        canvas {
+            display: block;
+            background-color: #333;
         }
-        th {
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(26, 26, 46, 0.85);
+            z-index: 10;
+        }
+        .hidden {
+            display: none !important;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
             background-color: #e94560;
             color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: transform 0.1s, background-color 0.2s;
         }
-        tr:nth-child(even) {
-            background-color: #1a1a2e;
+        button:hover {
+            background-color: #ff5c77;
+            transform: scale(1.05);
         }
-        blockquote {
-            background-color: #0f3460;
-            border-left: 5px solid #4ecca3;
-            margin: 30px 0;
-            padding: 20px;
-            font-style: italic;
-            border-radius: 0 8px 8px 0;
-            font-size: 1.1em;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        button:active {
+            transform: scale(0.95);
         }
-        .accent {
-            color: #4ecca3;
+        #score-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5rem;
             font-weight: bold;
+            color: #4ecca3;
+            z-index: 5;
+            text-shadow: 1px 1px 2px black;
+        }
+        .instructions {
+            margin-top: 15px;
+            color: #4ecca3;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Goob Horizon</h1>
-        <p>Get ready to experience the most chaotic, high-octane, and downright silly open-world racing festival ever created. <strong>Goob Horizon</strong> isn't about prestige or perfectly tuned supercars; it's about speed, physics-defying stunts, and the pure joy of driving absolutely ridiculous vehicles.</p>
 
-        <section>
-            <h2>The World: The Goob Archipelago</h2>
-            <p>Instead of a single country, you are let loose on a vibrant, shifting chain of islands connected by giant, floating highways and off-road dirt paths.</p>
-            <ul>
-                <li><strong>The Glitch Zone:</strong> A neon-soaked city where the roads literally rearrange themselves while you are driving.</li>
-                <li><strong>Mount Wobble:</strong> A massive, jagged peak with treacherous, winding roads that demand precise drifting (or just plain luck).</li>
-                <li><strong>The Slippy Wetlands:</strong> A mud-drenched swamp where traction is a myth and "skidding" is the primary mode of travel.</li>
-            </ul>
-        </section>
+    <h1>Goob Horizon</h1>
+    
+    <div id="game-container">
+        <div id="score-display">Smiles: <span id="score">0</span></div>
+        
+        <div id="ui-layer">
+            <h2 id="game-message" style="color: white; font-size: 2rem; margin-bottom: 20px;">Ready to Drive?</h2>
+            <button id="start-btn">Start Game</button>
+        </div>
 
-        <section>
-            <h2>The Vehicle Roster</h2>
-            <p>In Goob Horizon, if it has wheels (or something resembling them), you can drive it.</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Vehicle Class</th>
-                        <th>Description</th>
-                        <th>Notable Examples</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Speedy Goobs</strong></td>
-                        <td>Lightweight, twitchy, and incredibly fast.</td>
-                        <td>Modified lawnmowers, Go-karts, Rocket-skates.</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Heavy Bonkers</strong></td>
-                        <td>Massive, indestructible, and impossible to steer.</td>
-                        <td>Armored School Buses, Steamrollers, Monster Trucks.</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Wacky Specials</strong></td>
-                        <td>Just plain weird vehicles.</td>
-                        <td>Giant Shopping Carts, Inflatable Beach Balls (with thrusters).</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-
-        <section>
-            <h2>Gameplay Features</h2>
-            <ul>
-                <li><strong>"Oops" Physics Engine:</strong> We’ve tuned the physics to be intentionally bouncy and forgiving. You won't crash; you’ll just perform a spectacular, multi-flip tumble and keep going.</li>
-                <li><strong>The Goob-o-Meter:</strong> The more chaotic and reckless you drive, the faster your "Goob-o-Meter" fills. Once full, you trigger <strong>"Turbo Mode,"</strong> where your vehicle turns into a neon-glowing projectile.</li>
-                <li><strong>Customizable Chaos:</strong> Use the livery editor to cover your vehicle in googly eyes, sticky notes, or animated patterns.</li>
-                <li><strong>Horizon Arcade (Goob Edition):</strong> Collaborative mini-games scattered across the map, like "King of the Hill" played with bumper cars or "Precision Parking" where you have to land on a moving blimp.</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Your Festival, Your Rules</h2>
-            <p>You start as a nobody in a beat-up go-kart and work your way up to becoming the <strong>Grand Goob of the Horizon</strong>. Along the way, you collect <span class="accent">"Smiles"</span> (our version of experience points) by winning races, discovering secret shortcuts, and completing dangerous stunts.</p>
-            
-            <blockquote>
-                <strong>Pro Tip:</strong> Don't worry about hitting the guardrails. In Goob Horizon, they're usually made of rubber and will just launch you back onto the track with a satisfying <em>boing</em> sound!
-            </blockquote>
-        </section>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
     </div>
+    
+    <div class="instructions">Controls: <strong>Left/Right Arrows</strong> or <strong>A/D</strong> to steer. Dodge the red blocks!</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const uiLayer = document.getElementById('ui-layer');
+        const startBtn = document.getElementById('start-btn');
+        const gameMessage = document.getElementById('game-message');
+        const scoreElement = document.getElementById('score');
+
+        // Game State
+        let isPlaying = false;
+        let animationId;
+        let score = 0;
+        let gameSpeed = 4;
+        let frameCount = 0;
+        let lineOffset = 0;
+
+        // Player (The Goob Kart)
+        const player = {
+            x: 175,
+            y: 500,
+            width: 40,
+            height: 70,
+            color: '#4ecca3',
+            speed: 6,
+            dx: 0
+        };
+
+        // Obstacles (The Heavy Bonkers)
+        let obstacles = [];
+
+        // Input Handling
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            KeyA: false,
+            KeyD: false
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+        });
+
+        function resetGame() {
+            player.x = canvas.width / 2 - player.width / 2;
+            obstacles = [];
+            score = 0;
+            gameSpeed = 5;
+            frameCount = 0;
+            scoreElement.innerText = score;
+            uiLayer.classList.add('hidden');
+            isPlaying = true;
+            gameLoop();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            cancelAnimationFrame(animationId);
+            gameMessage.innerText = `CRASHED! Smiles: ${Math.floor(score)}`;
+            startBtn.innerText = "Play Again";
+            uiLayer.classList.remove('hidden');
+        }
+
+        function spawnObstacle() {
+            // Spawn rate increases slightly with speed
+            if (frameCount % Math.max(20, Math.floor(60 - gameSpeed * 2)) === 0) {
+                const width = 40 + Math.random() * 30; // Random width
+                const x = Math.random() * (canvas.width - width - 40) + 20; // Keep within grass margins
+                obstacles.push({
+                    x: x,
+                    y: -100,
+                    width: width,
+                    height: 80,
+                    color: '#e94560'
+                });
+            }
+        }
+
+        function update() {
+            // Move Player
+            if ((keys.ArrowLeft || keys.KeyA) && player.x > 20) {
+                player.x -= player.speed;
+            }
+            if ((keys.ArrowRight || keys.KeyD) && player.x < canvas.width - player.width - 20) {
+                player.x += player.speed;
+            }
+
+            // Update Obstacles
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                obs.y += gameSpeed;
+
+                // Collision Detection (Axis-Aligned Bounding Box)
+                if (
+                    player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y
+                ) {
+                    gameOver();
+                }
+
+                // Remove off-screen obstacles
+                if (obs.y > canvas.height) {
+                    obstacles.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Increase score and difficulty
+            score += gameSpeed * 0.02;
+            scoreElement.innerText = Math.floor(score);
+            gameSpeed += 0.002; // Slowly accelerate the game
+            frameCount++;
+            
+            // Road line animation
+            lineOffset += gameSpeed;
+            if (lineOffset > 60) lineOffset = 0;
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grass margins
+            ctx.fillStyle = '#0f3460';
+            ctx.fillRect(0, 0, 20, canvas.height);
+            ctx.fillRect(canvas.width - 20, 0, 20, canvas.height);
+
+            // Draw center road lines
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            for (let i = -60; i < canvas.height; i += 60) {
+                ctx.fillRect(canvas.width / 2 - 5, i + lineOffset, 10, 30);
+            }
+
+            // Draw Player (The Goob Kart)
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // Kart details (windshield)
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(player.x + 5, player.y + 10, player.width - 10, 15);
+            // Googly eyes on the kart
+            ctx.fillStyle = 'black';
+            ctx.fillRect(player.x + 10, player.y + 15, 4, 4);
+            ctx.fillRect(player.x + 25, player.y + 15, 4, 4);
+
+            // Draw Obstacles
+            for (let obs of obstacles) {
+                ctx.fillStyle = obs.color;
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                // Obstacle details
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(obs.x + 5, obs.y + 5, obs.width - 10, obs.height - 10);
+            }
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            update();
+            spawnObstacle();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        startBtn.addEventListener('click', resetGame);
+        
+        // Initial static draw so it doesn't look empty before clicking start
+        draw();
+    </script>
 </body>
 </html>

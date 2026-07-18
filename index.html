@@ -2,204 +2,200 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Hills & Trees</title>
+    <title>Goob Horizon - Physics & Jumps</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        
-        /* Minimap Styling */
         #minimap_canvas {
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 220px; /* Slightly larger */
+            width: 220px;
             height: 220px;
             border: 3px solid rgba(255, 255, 255, 0.6);
-            background-color: rgba(10, 25, 10, 0.85); /* Darker green base */
+            background-color: rgba(10, 25, 10, 0.85);
             border-radius: 12px;
             box-shadow: 0 6px 15px rgba(0,0,0,0.6);
         }
     </style>
-    <!-- Standard Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="ui">SPEED: <span id="speed">0</span> MPH</div>
-    <!-- 2D Canvas Layer for the Map -->
+    <div id="ui">SPEED: <span id="speed">0</span> MPH<br><span id="airtime" style="font-size: 16px; color: #ffcc00; display: none;">AIR TIME!</span></div>
     <canvas id="minimap_canvas" width="220" height="220"></canvas>
     
     <script>
-        // --- 1. SETUP THE 3D ENGINE ---
+        // --- 1. SETUP ENGINE ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x66CCFF); // Horizon Blue Sky
+        renderer.setClearColor(0x66CCFF);
         document.body.appendChild(renderer.domElement);
 
-        // Better lighting for terrain depth
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
         sunLight.position.set(50, 100, 50);
         scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x505050)); // Warmer ambient
+        scene.add(new THREE.AmbientLight(0x505050));
 
-        // --- 2. COMPLEX TERRAIN GENERATION (Hills & Trees) ---
-        const WORLD_SIZE = 1000; // Expanded world
+        // --- 2. HILLS (Steeper for bigger jumps!) ---
+        const WORLD_SIZE = 1000;
         const MAP_SCALE = 220 / WORLD_SIZE; 
-        const MAP_CENTER = 110; // Half of 220
+        const MAP_CENTER = 110;
 
-        // A. Generate Rolling Hills using a heightmap function
-        // This function defines the geometry height AND tells the car how high to be.
         function getHeight(x, z) {
-            // Combine different frequencies for natural rolling hills
-            const hill1 = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 12;
-            const hill2 = Math.sin(x * 0.005 + z * 0.01) * 8;
+            // Amplified the sine frequency and height multipliers to make sharper ramp hills
+            const hill1 = Math.sin(x * 0.04) * Math.cos(z * 0.04) * 18; 
+            const hill2 = Math.sin(x * 0.01 + z * 0.02) * 10;
             return hill1 + hill2;
         }
 
-        const groundGeom = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 100, 100); // Higher detail vertices
-        groundGeom.rotateX(-Math.PI / 2); // Lay flat
+        const groundGeom = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 120, 120);
+        groundGeom.rotateX(-Math.PI / 2);
 
-        // Apply heightmap to geometry vertices
         const vertices = groundGeom.attributes.position.array;
         for (let i = 0; i < vertices.length; i += 3) {
-            const x = vertices[i];
-            const z = vertices[i + 2];
-            vertices[i + 1] = getHeight(x, z); // Set Y (height)
+            vertices[i + 1] = getHeight(vertices[i], vertices[i + 2]);
         }
-        groundGeom.computeVertexNormals(); // Needed for proper lighting on hills
+        groundGeom.computeVertexNormals();
 
-        const groundMat = new THREE.MeshStandardMaterial({ 
-            color: 0x44aa44, // Grass Green
-            flatShading: true, // Low-poly style
-            roughness: 0.8
-        });
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x44aa44, flatShading: true, roughness: 0.8 });
         const ground = new THREE.Mesh(groundGeom, groundMat);
         scene.add(ground);
 
-        // B. Populate with Trees (and store locations for the minimap)
+        // Trees
         const trees = [];
-        const TREE_COUNT = 250;
-        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // Brown
-        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, flatShading: true }); // Forest Green
-
-        for (let i = 0; i < TREE_COUNT; i++) {
+        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, flatShading: true });
+        for (let i = 0; i < 200; i++) {
             const x = (Math.random() - 0.5) * WORLD_SIZE * 0.9;
             const z = (Math.random() - 0.5) * WORLD_SIZE * 0.9;
             const y = getHeight(x, z);
-
-            // Simple low-poly tree Group
             const treeGroup = new THREE.Group();
-            
-            // Trunk
-            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 4, 6), treeTrunkMat);
-            trunk.position.y = 2; // Base at ground
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.7, 4, 5), treeTrunkMat);
+            trunk.position.y = 2;
             treeGroup.add(trunk);
-
-            // Leaves (Cone)
-            const leaves = new THREE.Mesh(new THREE.ConeGeometry(3, 8, 6), treeLeavesMat);
-            leaves.position.y = 7;
+            const leaves = new THREE.Mesh(new THREE.ConeGeometry(2.5, 7, 5), treeLeavesMat);
+            leaves.position.y = 6;
             treeGroup.add(leaves);
-
             treeGroup.position.set(x, y, z);
-            // Randomize scale slightly for variation
-            const scale = 0.8 + Math.random() * 0.5;
-            treeGroup.scale.set(scale, scale, scale);
-            
             scene.add(treeGroup);
-            // Store data for the minimap draw loop
             trees.push({ x: x, z: z });
         }
 
-        // --- 3. CREATE THE VEHICLE ---
+        // --- 3. VEHICLE SETUP ---
         const car = new THREE.Group();
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.5, roughness: 0.2 });
-        car.add(new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), bodyMat)); // Chassis
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.4, roughness: 0.3 });
+        const chassis = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), bodyMat);
+        chassis.position.y = 0.4; // offset center of mass
+        car.add(chassis);
         scene.add(car);
-        camera.position.set(0, 5, -10); // Higher camera for hills
+        camera.position.set(0, 5, -12);
 
-        // --- 4. THE MINIMAP SYSTEM (Hills & Trees) ---
+        // --- 4. GRAVITY VARIABLES ---
+        let speed = 0, rotation = 0;
+        let verticalVelocity = 0; 
+        const GRAVITY = 0.015;     // Downward acceleration constant
+        const CAR_HEIGHT_OFFSET = 0.4; // Radius of wheels/chassis alignment
+
+        // --- 5. MINIMAP LOOP ---
         const miniCanvas = document.getElementById('minimap_canvas');
         const miniCtx = miniCanvas.getContext('2d');
 
         function drawMinimap() {
             miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
-            
-            // A. Draw Trees (synchronised with 3D positions)
-            miniCtx.fillStyle = 'rgba(10, 60, 10, 0.7)'; // Dark forest green
+            miniCtx.fillStyle = 'rgba(15, 70, 15, 0.6)';
             trees.forEach(tree => {
-                const mapX = tree.x * MAP_SCALE + MAP_CENTER;
-                const mapZ = tree.z * MAP_SCALE + MAP_CENTER;
-                // Draw small dots for trees
                 miniCtx.beginPath();
-                miniCtx.arc(mapX, mapZ, 2, 0, Math.PI * 2);
+                miniCtx.arc(tree.x * MAP_SCALE + MAP_CENTER, tree.z * MAP_SCALE + MAP_CENTER, 1.5, 0, Math.PI * 2);
                 miniCtx.fill();
             });
-
-            // B. Draw the car marker (red triangle)
             const carMapX = car.position.x * MAP_SCALE + MAP_CENTER;
             const carMapZ = car.position.z * MAP_SCALE + MAP_CENTER;
-
             miniCtx.save();
             miniCtx.translate(carMapX, carMapZ);
             miniCtx.rotate(-car.rotation.y + Math.PI); 
-
-            miniCtx.fillStyle = '#FF0000'; // Vibrant Red
-            miniCtx.strokeStyle = '#FFFFFF';
-            miniCtx.lineWidth = 1;
+            miniCtx.fillStyle = '#FF0000';
             miniCtx.beginPath();
-            miniCtx.moveTo(0, -8); // Tip
-            miniCtx.lineTo(5, 5);  // Right base
-            miniCtx.lineTo(-5, 5); // Left base
-            miniCtx.closePath();
-            miniCtx.fill();
-            miniCtx.stroke();
-            
+            miniCtx.moveTo(0, -7); miniCtx.lineTo(4, 4); miniCtx.lineTo(-4, 4);
+            miniCtx.closePath(); miniCtx.fill();
             miniCtx.restore();
         }
 
-        // --- 5. GAME & CONTROLS LOOP ---
+        // --- 6. CONTROLS ---
         const keys = { w: false, a: false, s: false, d: false };
         window.addEventListener('keydown', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
         window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
 
-        let speed = 0, rotation = 0;
-
+        // --- 7. ANIMATION ENGINE ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Arcade Drive Physics
-            if (keys.w) speed = Math.min(speed + 0.015, 1.2); // Faster top speed
-            else if (keys.s) speed = Math.max(speed - 0.02, -0.4); // Stronger braking
-            else speed *= 0.985; // Natural coasting friction
+            // Arcade Drive
+            if (keys.w) speed = Math.min(speed + 0.02, 1.8); // Higher speed boost for airtime!
+            else if (keys.s) speed = Math.max(speed - 0.03, -0.5);
+            else speed *= 0.985;
 
-            if (keys.a) rotation += 0.05 * (speed / 1.2); // Responsive steering
-            if (keys.d) rotation -= 0.05 * (speed / 1.2); 
+            if (keys.a) rotation += 0.04 * (speed > 0 ? 1 : -0.5);
+            if (keys.d) rotation -= 0.04 * (speed > 0 ? 1 : -0.5);
 
             car.rotation.y = rotation;
             car.translateZ(speed);
 
-            // Stick Car to the Hills: Update Y based on X, Z position
-            const currentH = getHeight(car.position.x, car.position.z);
-            // Slight smoothing to prevent chassis jitter (lerp Y)
-            car.position.y = THREE.MathUtils.lerp(car.position.y, currentH + 0.5, 0.2); 
+            // --- GRAVITY ENGINE & COLLISION PHYSICS ---
+            const groundY = getHeight(car.position.x, car.position.z);
+            const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
 
-            // World Boundary (Wraps around)
+            if (currentVehicleFloor > groundY + 0.1) {
+                // In the air: apply acceleration downwards
+                verticalVelocity -= GRAVITY;
+                document.getElementById('airtime').style.display = 'inline';
+            } else {
+                // On the ground
+                document.getElementById('airtime').style.display = 'none';
+                
+                // If the car was traveling forward over a hump, calculate if momentum breaks ground adhesion
+                const nextGroundY = getHeight(
+                    car.position.x + Math.sin(rotation) * speed, 
+                    car.position.z + Math.cos(rotation) * speed
+                );
+                
+                // Calculate trajectory change slope
+                const slopeDelta = nextGroundY - groundY;
+
+                if (slopeDelta < -1.5 && speed > 0.8) { 
+                    // Car flies forward off a ridge because hill falls faster than car's native ground adaptation
+                    verticalVelocity = speed * 0.15; 
+                } else {
+                    // Normal ground tracking
+                    verticalVelocity = 0;
+                    car.position.y = groundY + CAR_HEIGHT_OFFSET;
+                }
+            }
+
+            // Apply calculated vertical motion vector
+            car.position.y += verticalVelocity;
+
+            // Extra safety catch if car falls through ground calculations
+            if (car.position.y < groundY + CAR_HEIGHT_OFFSET) {
+                car.position.y = groundY + CAR_HEIGHT_OFFSET;
+                verticalVelocity = 0;
+            }
+
+            // Boundaries
             if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
             if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
             if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
             if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
 
-            // Camera follow (Smooth Lerp, slightly higher offset)
-            const relativeCameraOffset = new THREE.Vector3(0, 5, -12);
+            // Camera Engine
+            const relativeCameraOffset = new THREE.Vector3(0, 4.5, -11);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
-            camera.position.lerp(cameraOffset, 0.1);
-            camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 1, car.position.z));
+            camera.position.lerp(cameraOffset, 0.08); // Loose tracking for dynamic jumping effects
+            camera.lookAt(new THREE.Vector3(car.position.x, car.position.y, car.position.z));
 
-            // Update UI
-            document.getElementById('speed').innerText = Math.round(speed * 180); // Adjusted scaling
-
-            // 6. EXECUTE THE MAP UPDATE
+            // Dashboard & Map Update
+            document.getElementById('speed').innerText = Math.round(speed * 110);
             drawMinimap();
 
             renderer.render(scene, camera);

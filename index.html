@@ -360,7 +360,7 @@
         const aiDrivers = [];
         const aiColors = ["#ff5500", "#ffcc00", "#ff0055", "#00ff66", "#9900ff"];
         for(let i=0; i<5; i++) {
-            let aiObj = createCarModel(aiColors[i], "Clanker_" + (i+1));
+            let aiObj = createCarModel(aiColors[i], "Fake Human AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA_" + (i+1));
             aiObj.mesh.position.set((Math.random()-0.5)*300, 10, (Math.random()-0.5)*300);
             scene.add(aiObj.mesh);
             aiDrivers.push({

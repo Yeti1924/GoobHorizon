@@ -75,6 +75,7 @@
         #airtime {
             position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
             font-size: 24px; font-weight: 900; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; display: none;
+            text-align: center;
         }
 
         #minimap_canvas {
@@ -173,7 +174,7 @@
         <button class="close-shop" onclick="toggleShop()">Resume Race</button>
     </div>
 
-    <div id="airtime">BIG AIR TIME!</div>
+    <div id="airtime">BIG AIR TIME!<br><span id="air_timer" style="font-size:16px; color:#fff;">0.0s</span></div>
 
     <div id="dashboard">
         <canvas id="gauge_canvas" width="180" height="180"></canvas>
@@ -197,6 +198,12 @@
         let playerCash = 50;
         let upgradeTiers = { speed: 1, grip: 1 };
 
+        // Precise Air Tracking Engine Variables
+        let isAirborne = false;
+        let airTimeStart = 0;
+        let lastMultiplierTick = 0;
+        let activeMultiplier = 1;
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 3000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -213,6 +220,7 @@
         const WORLD_SIZE = 1600; 
         const MAP_SCALE = 200 / WORLD_SIZE; 
         const MAP_CENTER = 100;
+        const BOUNDARY_LIMIT = (WORLD_SIZE / 2) - 10; // Invisible fallback check padding
 
         function getHeight(x, z) {
             const hill1 = Math.sin(x * 0.015) * Math.cos(z * 0.015) * 35; 
@@ -231,6 +239,34 @@
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x223a22, wireframe: false, flatShading: true, roughness: 0.9 });
         const ground = new THREE.Mesh(groundGeom, groundMat);
         scene.add(ground);
+
+        // --- VISUAL BOUNDARY BARRIERS ---
+        const barrierMat = new THREE.MeshBasicMaterial({ color: 0xff0055, side: THREE.DoubleSide, transparent: true, opacity: 0.4, wireframe: true });
+        const halfSize = WORLD_SIZE / 2;
+
+        // North Barrier
+        const northWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        northWall.position.set(0, 20, -halfSize);
+        scene.add(northWall);
+
+        // South Barrier
+        const southWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        southWall.position.set(0, 20, halfSize);
+        southWall.rotation.y = Math.PI;
+        scene.add(southWall);
+
+        // East Barrier
+        const eastWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        eastWall.position.set(halfSize, 20, 0);
+        eastWall.rotation.y = -Math.PI / 2;
+        scene.add(eastWall);
+
+        // West Barrier
+        const westWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        westWall.position.set(-halfSize, 20, 0);
+        westWall.rotation.y = Math.PI / 2;
+        scene.add(westWall);
+
 
         // --- TREES POPULATION ---
         const trees = [];
@@ -319,11 +355,11 @@
         const keys = { w: false, a: false, s: false, d: false };
 
         // --- INTERACTIVE UI TRIGGERS ---
-        function toggleShop() {
+        window.toggleShop = function() {
             const shop = document.getElementById('upgrade_shop');
             shop.style.display = shop.style.display === 'block' ? 'none' : 'block';
             document.getElementById('shop_cash').innerText = playerCash;
-        }
+        };
 
         window.buyUpgrade = function(type) {
             let cost = type === 'speed' ? upgradeTiers.speed * 150 : upgradeTiers.grip * 200;
@@ -403,6 +439,16 @@
                 car.rotation.y = rotation;
                 car.translateZ(speed);
 
+                // --- MAP EDGE BARRIER PHYSICS COLLISION DETECTION ---
+                if (Math.abs(car.position.x) >= BOUNDARY_LIMIT) {
+                    speed = -speed * 0.6; // Reflect kinetic speed vector
+                    car.position.x = Math.sign(car.position.x) * (BOUNDARY_LIMIT - 2);
+                }
+                if (Math.abs(car.position.z) >= BOUNDARY_LIMIT) {
+                    speed = -speed * 0.6;
+                    car.position.z = Math.sign(car.position.z) * (BOUNDARY_LIMIT - 2);
+                }
+
                 // --- 3D SURFACE HILL ROTATION ALIGNMENT ---
                 const offsetRadius = 1.5;
                 const frontY = getHeight(car.position.x + Math.sin(rotation)*offsetRadius, car.position.z + Math.cos(rotation)*offsetRadius);
@@ -417,10 +463,30 @@
                 // Handle gravity & airborne mechanics
                 if (car.position.y > groundY + 0.2) {
                     verticalVelocity -= 0.008;
+                    
+                    if (!isAirborne) {
+                        isAirborne = true;
+                        airTimeStart = Date.now();
+                        lastMultiplierTick = airTimeStart;
+                        activeMultiplier = 1;
+                        playerCash += 20; 
+                    }
+
+                    const totalAirTimeSeconds = (Date.now() - airTimeStart) / 1000;
+                    
+                    if (Date.now() - lastMultiplierTick >= 5000) {
+                        activeMultiplier += 1;
+                        playerCash *= activeMultiplier; 
+                        lastMultiplierTick = Date.now();
+                    }
+
                     document.getElementById('airtime').style.display = 'block';
-                    if(Math.abs(verticalVelocity) > 0.05) playerCash += 1; 
+                    document.getElementById('air_timer').innerText = `${totalAirTimeSeconds.toFixed(1)}s (x${activeMultiplier})`;
+
                 } else {
+                    isAirborne = false;
                     document.getElementById('airtime').style.display = 'none';
+                    
                     if (frontY - groundY < -1.5 && speed > 0.9) {
                         verticalVelocity = speed * 0.15;
                     } else {
@@ -453,9 +519,9 @@
                     let dz = ai.targetZ - ai.mesh.position.z;
                     let dist = Math.hypot(dx, dz);
 
-                    if(dist < 20) {
-                        ai.targetX = (Math.random()-0.5)*700;
-                        ai.targetZ = (Math.random()-0.5)*700;
+                    if(dist < 20 || Math.abs(ai.mesh.position.x) >= BOUNDARY_LIMIT || Math.abs(ai.mesh.position.z) >= BOUNDARY_LIMIT) {
+                        ai.targetX = (Math.random()-0.5)*(WORLD_SIZE - 60);
+                        ai.targetZ = (Math.random()-0.5)*(WORLD_SIZE - 60);
                     }
 
                     let targetRot = Math.atan2(dx, dz);

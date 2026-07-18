@@ -2,524 +2,419 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Physics Sandbox & Racing Engine</title>
+    <title>Goob Horizon - Ultimate Sandbox Edition</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #050505;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none;
-        }
-
-        #canvas_container {
-            width: 100vw;
-            height: 100vh;
-            position: absolute;
-            z-index: 1;
-        }
-
-        /* HUD LAYOUT */
-        #hud_container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-            box-sizing: border-box;
-            padding: 20px;
-        }
-
-        .hud-panel {
-            position: absolute;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px 20px;
-            color: #ffffff;
-            font-weight: 600;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            pointer-events: auto;
-        }
-
-        #stats_panel {
-            top: 20px;
-            left: 20px;
-            min-width: 180px;
-        }
-
-        .stat-line {
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        
+        /* --- SIGN IN SCREEN OVERLAY --- */
+        #auth_overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #0d0d1a 0%, #05050a 100%);
+            z-index: 9999;
             display: flex;
-            justify-content: space-between;
-            margin: 5px 0;
-            font-size: 14px;
-        }
-
-        .stat-value {
-            color: #00bfff;
-        }
-
-        #cash_value {
-            color: #2ecc71;
-            font-size: 18px;
-        }
-
-        /* AIRTIME DISPLAY */
-        #airtime {
-            position: absolute;
-            top: 30%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            display: none;
-            animation: pulse 1s infinite alternate;
-        }
-
-        #airtime h2 {
-            margin: 0;
-            color: #f1c40f;
-            font-size: 28px;
-            text-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
-            letter-spacing: 2px;
-        }
-
-        #air_timer {
-            font-size: 20px;
+            justify-content: center;
+            align-items: center;
             color: #fff;
         }
 
-        /* TELEMETRY GAUGES */
-        #gauge_panel {
-            bottom: 20px;
-            right: 20px;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-
-        #gauge_canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        #speedometer_digital {
+        .auth-container {
+            background: rgba(20, 20, 35, 0.9);
+            padding: 40px;
+            border-radius: 16px;
+            border: 2px solid #00bfff;
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.3);
             text-align: center;
-            z-index: 2;
+            width: 340px;
         }
 
-        #speed_digital {
-            font-size: 36px;
-            font-weight: 800;
-            color: #00bfff;
-            line-height: 1;
-        }
-
-        .unit {
-            font-size: 12px;
-            color: #aaa;
+        .auth-container h1 {
+            font-size: 32px;
+            margin: 0 0 5px 0;
             text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #ff1133, #00bfff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        /* MINIMAP SYSTEM */
-        #minimap_panel {
-            bottom: 20px;
-            left: 20px;
-            width: 200px;
-            height: 200px;
-            padding: 0;
-            overflow: hidden;
+        .auth-container p { font-size: 14px; color: #8a8ab0; margin-bottom: 25px; }
+
+        .auth-container input[type="text"] {
+            width: 100%; padding: 12px 20px; margin-bottom: 20px; border-radius: 8px;
+            border: 1px solid rgba(0, 191, 255, 0.4); background: rgba(10, 10, 20, 0.6);
+            color: #fff; font-size: 16px; box-sizing: border-box; outline: none; text-align: center;
+        }
+
+        .color-picker-container {
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            margin-bottom: 25px; background: rgba(10, 10, 20, 0.4); padding: 10px; border-radius: 8px;
+        }
+
+        .color-wheel { -webkit-appearance: none; appearance: none; width: 50px; height: 50px; background: none; border: none; cursor: pointer; }
+        .color-wheel::-webkit-color-swatch { border-radius: 50%; border: 2px solid #fff; }
+
+        .auth-container button {
+            width: 100%; padding: 14px; background: linear-gradient(90deg, #00bfff, #ff00ff);
+            border: none; border-radius: 8px; color: white; font-size: 16px; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
+        }
+
+        /* --- DASHBOARD GAME UI --- */
+        #dashboard {
+            position: absolute; bottom: 25px; left: 30px; width: 180px; height: 180px; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: radial-gradient(circle, rgba(20,20,30,0.8) 0%, rgba(10,10,15,0.95) 80%);
+            border: 2px solid rgba(0, 191, 255, 0.4); border-radius: 50%;
+        }
+
+        #gauge_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #speed_digital { z-index: 2; font-size: 44px; font-weight: 900; color: #fff; line-height: 40px; }
+        #speed_unit { z-index: 2; font-size: 12px; font-weight: 700; color: #00bfff; letter-spacing: 1px; }
+
+        #airtime {
+            position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
+            font-size: 24px; font-weight: 900; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; display: none;
+            text-align: center;
         }
 
         #minimap_canvas {
-            width: 100%;
-            height: 100%;
+            position: absolute; top: 20px; right: 20px; width: 200px; height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.4); background: rgba(10, 20, 15, 0.85); border-radius: 8px;
         }
 
-        /* UPGRADES SHOP MENU */
-        #shop_panel {
-            top: 20px;
-            right: 20px;
-            width: 260px;
+        /* --- LIVE RACE CHAT OVERLAY --- */
+        #chat_box {
+            position: absolute; bottom: 25px; left: 230px; width: 320px; height: 180px;
+            background: rgba(10, 10, 20, 0.6); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;
+        }
+        #chat_logs { flex: 1; overflow-y: auto; color: #ddd; font-size: 13px; margin-bottom: 5px; word-wrap: break-word; }
+        #chat_input {
+            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #00bfff; border-radius: 4px;
+            padding: 6px; color: #fff; font-size: 13px; box-sizing: border-box; outline: none;
         }
 
-        .shop-title {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 5px;
-            color: #f1c40f;
+        /* --- STATS & SHOP PANEL --- */
+        #stats_hud {
+            position: absolute; top: 20px; left: 20px; color: #fff; font-size: 16px;
+            font-weight: bold; background: rgba(15,15,30,0.7); padding: 15px; border-radius: 8px;
+            border-left: 4px solid #ff00ff;
         }
+        .hud-tip { font-size: 11px; color: #aaa; font-weight: normal; margin-top: 5px; }
 
-        .shop-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 10px 0;
-            background: rgba(255,255,255,0.05);
-            padding: 8px 10px;
-            border-radius: 6px;
+        #upgrade_shop {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 15, 25, 0.95); border: 2px solid #ff00ff; border-radius: 12px;
+            padding: 25px; width: 320px; color: #fff; display: none; z-index: 1000;
         }
-
+        .shop-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; }
         .shop-btn {
-            background: #2ecc71;
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+            background: linear-gradient(90deg, #ff00ff, #7000ff); border: none; color: #fff;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;
         }
-
-        .shop-btn:hover {
-            background: #27ae60;
-        }
-
-        .shop-btn:disabled {
-            background: #7f8c8d;
-            cursor: not-allowed;
-        }
-
-        @keyframes pulse {
-            from { transform: translate(-50%, -50%) scale(1); }
-            to { transform: translate(-50%, -50%) scale(1.08); }
-        }
+        .shop-btn:hover { filter: brightness(1.2); }
+        .close-shop { width: 100%; padding: 8px; margin-top: 15px; background: #444; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
     </style>
-    <!-- Include Three.js via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, onDisconnect, push } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB0_yk-kpB8Si-JGzI8k-qK9eWkGl5eRJ4",
+            authDomain: "goob-horizon.firebaseapp.com",
+            databaseURL: "https://goob-horizon-default-rtdb.firebaseio.com",
+            projectId: "goob-horizon"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const playerId = "player_" + Math.floor(Math.random() * 100000);
+        const playerRef = ref(db, `players/${playerId}`);
+        const chatRef = ref(db, `global_chat`);
+
+        onDisconnect(playerRef).remove();
+        window.network = { playerId, playerRef, db, ref, onValue, set, push, chatRef };
+    </script>
 </head>
 <body>
 
-    <div id="canvas_container"></div>
-
-    <div id="hud_container">
-        <!-- Dashboard Stats -->
-        <div id="stats_panel" class="hud-panel">
-            <div class="stat-line">
-                <span>BANK:</span>
-                <span id="cash_value">$<span id="hud_cash">0</span></span>
+    <div id="auth_overlay">
+        <div class="auth-container">
+            <h1>Goob Horizon</h1>
+            <p>Sandbox Hypercar Setup</p>
+            <input type="text" id="username_input" placeholder="Driver Nickname..." maxlength="12" value="Driver">
+            <div class="color-picker-container">
+                <input type="color" id="color_wheel" class="color-wheel" value="#00bfff">
+                <span style="font-size: 13px; color: #aaa;">Select Body Finish</span>
             </div>
-            <div class="stat-line">
-                <span>DRIVER:</span>
-                <span class="stat-value" id="driver_name">Player 1</span>
-            </div>
-        </div>
-
-        <!-- Flying Air Time Dynamic Multiplier Alert -->
-        <div id="airtime">
-            <h2>BIG AIR!</h2>
-            <div id="air_timer">0.0s (x1)</div>
-        </div>
-
-        <!-- Shop Upgrades Interface Menu -->
-        <div id="shop_panel" class="hud-panel">
-            <div class="shop-title">PERFORMANCE MODIFICATIONS</div>
-            <div class="shop-item">
-                <div>Engine Tune (<span id="lvl_speed">0</span>)</div>
-                <button class="shop-btn" id="btn_speed" onclick="buyUpgrade('speed', 150)">$150</button>
-            </div>
-            <div class="shop-item">
-                <div>Racing Tires (<span id="lvl_grip">0</span>)</div>
-                <button class="shop-btn" id="btn_grip" onclick="buyUpgrade('grip', 200)">$200</button>
-            </div>
-        </div>
-
-        <!-- Map Navigation Tracking Visual Radar -->
-        <div id="minimap_panel" class="hud-panel">
-            <canvas id="minimap_canvas" width="200" height="200"></canvas>
-        </div>
-
-        <!-- Telemetry Analog Meter Dials -->
-        <div id="gauge_panel" class="hud-panel">
-            <canvas id="gauge_canvas" width="180" height="180"></canvas>
-            <div id="speedometer_digital">
-                <div id="speed_digital">0</div>
-                <div class="unit">KM/H</div>
-            </div>
+            <button id="join_btn">Start Sandbox</button>
         </div>
     </div>
 
+    <div id="stats_hud">
+        Cash: $<span id="hud_cash">0</span><br>
+        Speed Tier: <span id="tier_speed">1</span> | Grip Tier: <span id="tier_grip">1</span>
+        <div class="hud-tip">Press <b>[P]</b> for Upgrades Shop</div>
+    </div>
+
+    <div id="upgrade_shop">
+        <h3 style="margin-top:0; border-bottom: 1px solid #ff00ff; padding-bottom: 5px;">🔧 Performance Tuning</h3>
+        <div style="font-size:14px; margin-bottom:15px; color:#ffcc00;">Available Wallet: $<span id="shop_cash">0</span></div>
+        <div class="shop-row">
+            <div>🚀 Engine Power (+$)<br><small id="lbl_speed">Tier 1</small></div>
+            <button class="shop-btn" onclick="buyUpgrade('speed')">$150</button>
+        </div>
+        <div class="shop-row">
+            <div>🏎️ Sticky Tires (-Slip)<br><small id="lbl_grip">Tier 1</small></div>
+            <button class="shop-btn" onclick="buyUpgrade('grip')">$200</button>
+        </div>
+        <button class="close-shop" onclick="toggleShop()">Resume Race</button>
+    </div>
+
+    <div id="airtime">BIG AIR TIME!<br><span id="air_timer" style="font-size:16px; color:#fff;">0.0s</span></div>
+
+    <div id="dashboard">
+        <canvas id="gauge_canvas" width="180" height="180"></canvas>
+        <div id="speed_digital">0</div>
+        <div id="speed_unit">MPH</div>
+    </div>
+
+    <div id="chat_box">
+        <div id="chat_logs"></div>
+        <input type="text" id="chat_input" placeholder="Press Enter to Chat..." maxlength="45">
+    </div>
+
+    <canvas id="minimap_canvas" width="200" height="200"></canvas>
+    
     <script>
-        // --- MOTOR GLOBAL CONSTANTS & ENGINE INITIALIZERS ---
-        const WORLD_SIZE = 500;
-        const BOUNDARY_LIMIT = WORLD_SIZE / 2;
-        const MAP_SCALE = 200 / WORLD_SIZE;
-        const MAP_CENTER = 100;
-
-        let scene, camera, renderer;
-        let car, localCar = { container: null, body: null, wheels: [] };
-        let speed = 0, rotation = 0, verticalVelocity = 0;
-        let isAirborne = false, airTimeStart = 0, lastMultiplierTick = 0, activeMultiplier = 1;
+        let gameActive = false;
+        let playerDisplayName = "Driver";
+        let playerSelectedColor = "#00bfff";
         
-        let playerCash = 100;
-        let playerDisplayName = "Player 1";
-        let playerSelectedColor = 0x00bfff;
-        let gameActive = true;
+        // Upgrade Stats System
+        let playerCash = 50;
+        let upgradeTiers = { speed: 1, grip: 1 };
 
-        let upgradeTiers = { speed: 0, grip: 0 };
-        let trees = [];
-        let aiDrivers = [];
-        let remotePlayers = {}; // Simulated structure for prospective socket streams
+        // Precise Air Tracking Engine Variables
+        let isAirborne = false;
+        let airTimeStart = 0;
+        let lastMultiplierTick = 0;
+        let activeMultiplier = 1;
 
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 3000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x050510);
+        document.body.appendChild(renderer.domElement);
+
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        sunLight.position.set(100, 200, 50);
+        scene.add(sunLight);
+        scene.add(new THREE.AmbientLight(0x404050));
+
+        // --- WORLD HEIGHT FIELD ---
+        const WORLD_SIZE = 1600; 
+        const MAP_SCALE = 200 / WORLD_SIZE; 
+        const MAP_CENTER = 100;
+        const BOUNDARY_LIMIT = (WORLD_SIZE / 2) - 10; // Invisible fallback check padding
+
+        function getHeight(x, z) {
+            const hill1 = Math.sin(x * 0.015) * Math.cos(z * 0.015) * 35; 
+            const hill2 = Math.sin(x * 0.004) * Math.cos(z * 0.006) * 18;
+            return hill1 + hill2;
+        }
+
+        const groundGeom = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 120, 120);
+        groundGeom.rotateX(-Math.PI / 2);
+        const vertices = groundGeom.attributes.position.array;
+        for (let i = 0; i < vertices.length; i += 3) {
+            vertices[i + 1] = getHeight(vertices[i], vertices[i + 2]);
+        }
+        groundGeom.computeVertexNormals();
+
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x223a22, wireframe: false, flatShading: true, roughness: 0.9 });
+        const ground = new THREE.Mesh(groundGeom, groundMat);
+        scene.add(ground);
+
+        // --- VISUAL BOUNDARY BARRIERS ---
+        const barrierMat = new THREE.MeshBasicMaterial({ color: 0xff0055, side: THREE.DoubleSide, transparent: true, opacity: 0.4, wireframe: true });
+        const halfSize = WORLD_SIZE / 2;
+
+        // North Barrier
+        const northWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        northWall.position.set(0, 20, -halfSize);
+        scene.add(northWall);
+
+        // South Barrier
+        const southWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        southWall.position.set(0, 20, halfSize);
+        southWall.rotation.y = Math.PI;
+        scene.add(southWall);
+
+        // East Barrier
+        const eastWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        eastWall.position.set(halfSize, 20, 0);
+        eastWall.rotation.y = -Math.PI / 2;
+        scene.add(eastWall);
+
+        // West Barrier
+        const westWall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, 80), barrierMat);
+        westWall.position.set(-halfSize, 20, 0);
+        westWall.rotation.y = Math.PI / 2;
+        scene.add(westWall);
+
+
+        // --- TREES POPULATION ---
+        const trees = [];
+        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e1b });
+        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x143d14, flatShading: true });
+        for (let i = 0; i < 250; i++) {
+            const tx = Math.sin(i * 927) * WORLD_SIZE * 0.44;
+            const tz = Math.cos(i * 341) * WORLD_SIZE * 0.44;
+            const ty = getHeight(tx, tz);
+            const group = new THREE.Group();
+            const t = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.7, 5), treeTrunkMat); t.position.y = 2.5;
+            const l = new THREE.Mesh(new THREE.ConeGeometry(3, 8, 4), treeLeavesMat); l.position.y = 6.5;
+            group.add(t, l); group.position.set(tx, ty, tz); scene.add(group);
+            trees.push({ x: tx, z: tz, radius: 4.0 });
+        }
+
+        // --- NAME / CHAT TEXTURE CREATOR ---
+        function createDynamicTag(name, text = "") {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 80;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(10, 10, 20, 0.75)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = 'Bold 18px sans-serif'; ctx.fillStyle = '#00bfff'; ctx.textAlign = 'center';
+            ctx.fillText(name, 128, 25);
+            
+            if(text) {
+                ctx.font = '14px sans-serif'; ctx.fillStyle = '#ffffff';
+                ctx.fillText(text.substring(0, 22), 128, 55);
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+            sprite.scale.set(5.5, 1.7, 1); sprite.position.y = 3.6;
+            return sprite;
+        }
+
+        // --- HYPERCAR ASSEMBLE ---
+        function createCarModel(colorHexStr, tagLabel = "") {
+            const group = new THREE.Group();
+            const chassisContainer = new THREE.Group();
+            const cleanColor = parseInt((colorHexStr || "#00bfff").replace("#", "0x"), 16);
+            
+            const bMat = new THREE.MeshStandardMaterial({ color: cleanColor, metalness: 0.7, roughness: 0.2 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
+            
+            const base = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.5, 6), bMat); base.position.y = 0.4;
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 2.4), new THREE.MeshStandardMaterial({color:0x0a0a15})); cabin.position.set(0, 0.9, -0.2);
+            const spoiler = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.1, 0.8), bMat); spoiler.position.set(0, 1.2, -2.8);
+            chassisContainer.add(base, cabin, spoiler);
+
+            const wGeom = new THREE.CylinderGeometry(0.65, 0.65, 0.5, 12); wGeom.rotateZ(Math.PI / 2);
+            const wheels = [
+                {x: 1.7, z: 1.8}, {x: -1.7, z: 1.8}, {x: 1.7, z: -1.8}, {x: -1.7, z: -1.8}
+            ].map(pos => {
+                const wMesh = new THREE.Mesh(wGeom, wheelMat); wMesh.position.set(pos.x, 0.5, pos.z);
+                chassisContainer.add(wMesh); return wMesh;
+            });
+
+            group.add(chassisContainer);
+            const tag = createDynamicTag(tagLabel); group.add(tag);
+            return { mesh: group, container: chassisContainer, wheels, tag };
+        }
+
+        let localCar = createCarModel("#00bfff", "Driver");
+        let car = localCar.mesh; scene.add(car);
+        car.position.set(0, 10, 0);
+
+        // --- AI CAR AGENTS ---
+        const aiDrivers = [];
+        const aiColors = ["#ff5500", "#ffcc00", "#ff0055", "#00ff66", "#9900ff"];
+        for(let i=0; i<5; i++) {
+            let aiObj = createCarModel(aiColors[i], "AI_Bot_" + (i+1));
+            aiObj.mesh.position.set((Math.random()-0.5)*300, 10, (Math.random()-0.5)*300);
+            scene.add(aiObj.mesh);
+            aiDrivers.push({
+                ...aiObj, speed: 0.4 + Math.random()*0.3, rotY: Math.random()*Math.PI*2,
+                targetX: (Math.random()-0.5)*600, targetZ: (Math.random()-0.5)*600
+            });
+        }
+
+        const remotePlayers = {};
+
+        // --- PHYSICS CONFIG ---
+        let speed = 0, rotation = 0;
+        let verticalVelocity = 0;
         const keys = { w: false, a: false, s: false, d: false };
 
-        // --- PROC-GEN MATHEMATICAL MOUNTAIN HEIGHT PROFILE ---
-        function getHeight(x, z) {
-            // Evaluates combined mathematical sine frequencies to generate procedural off-road valleys
-            let h = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 8;
-            h += Math.sin(x * 0.005) * Math.sin(z * 0.008) * 22;
-            // Prevent map generation floor values clipping through absolute void base bounds
-            return Math.max(h, -5);
-        }
+        // --- INTERACTIVE UI TRIGGERS ---
+        window.toggleShop = function() {
+            const shop = document.getElementById('upgrade_shop');
+            shop.style.display = shop.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('shop_cash').innerText = playerCash;
+        };
 
-        // --- SUB-SYSTEM BOOT INITIALIZATION ROUTINE ---
-        function init() {
-            const container = document.getElementById('canvas_container');
-            
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0f172a);
-            scene.fog = new THREE.FogExp2(0x0f172a, 0.007);
-
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            container.appendChild(renderer.domElement);
-
-            // Ambience Lighting Setups
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-            scene.add(ambientLight);
-
-            const sunLight = new THREE.DirectionalLight(0xfffaed, 0.8);
-            sunLight.position.set(100, 150, 50);
-            sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = 2048;
-            sunLight.shadow.mapSize.height = 2048;
-            sunLight.shadow.camera.near = 0.5;
-            sunLight.shadow.camera.far = 500;
-            const d = 200;
-            sunLight.shadow.camera.left = -d;
-            sunLight.shadow.camera.right = d;
-            sunLight.shadow.camera.top = d;
-            sunLight.shadow.camera.bottom = -d;
-            scene.add(sunLight);
-
-            buildTerrain();
-            buildAssets();
-            spawnPlayerCar();
-            spawnAIDrivers();
-
-            // Direct User input listeners
-            window.addEventListener('keydown', (e) => handleInput(e, true));
-            window.addEventListener('keyup', (e) => handleInput(e, false));
-            window.addEventListener('resize', onWindowResize);
-
-            // Perform initial cash readout injection
-            document.getElementById('hud_cash').innerText = playerCash;
-
-            // Start loop cycles
-            requestAnimationFrame(animate);
-        }
-
-        // --- STRUCTURAL PROCEDURAL WORLD GENERATION ---
-        function buildTerrain() {
-            const segments = 120;
-            const geometry = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segments, segments);
-            geometry.rotateX(-Math.PI / 2);
-
-            const pos = geometry.attributes.position;
-            for (let i = 0; i < pos.count; i++) {
-                let x = pos.getX(i);
-                let z = pos.getZ(i);
-                pos.setY(i, getHeight(x, z));
-            }
-            geometry.computeVertexNormals();
-
-            // Segmented Grid coloring rules mapping high coordinates vs low coordinates
-            const material = new THREE.MeshStandardMaterial({
-                color: 0x27ae60,
-                roughness: 0.85,
-                metalness: 0.05,
-                flatShading: true
-            });
-
-            const terrain = new THREE.Mesh(geometry, material);
-            terrain.receiveShadow = true;
-            scene.add(terrain);
-        }
-
-        function buildAssets() {
-            // Scatter decorative collision props across global surface bounds
-            const treeGeo = new THREE.ConeGeometry(2, 8, 5);
-            const trunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 3, 5);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1e824c, flatShading: true });
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
-
-            for(let i = 0; i < 60; i++) {
-                const x = (Math.random() - 0.5) * (WORLD_SIZE - 40);
-                const z = (Math.random() - 0.5) * (WORLD_SIZE - 40);
-                const y = getHeight(x, z);
-
-                const group = new THREE.Group();
-                
-                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-                trunk.position.y = 1.5;
-                trunk.castShadow = true;
-                group.add(trunk);
-
-                const leaves = new THREE.Mesh(treeGeo, leavesMat);
-                leaves.position.y = 6;
-                leaves.castShadow = true;
-                group.add(leaves);
-
-                group.position.set(x, y, z);
-                scene.add(group);
-
-                trees.push({ x: x, z: z, radius: 2.2 });
-            }
-        }
-
-        // --- PLAYER MECHANICAL CONSTRUCT COMPONENT CREATOR ---
-        function spawnPlayerCar() {
-            localCar.container = new THREE.Group();
-            car = new THREE.Group(); // Base positioning entity reference
-            
-            // Chassis Box Setup
-            const bodyGeo = new THREE.BoxGeometry(2.4, 1.0, 4.8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: playerSelectedColor, roughness: 0.2, metalness: 0.8 });
-            localCar.body = new THREE.Mesh(bodyGeo, bodyMat);
-            localCar.body.position.y = 0.8;
-            localCar.body.castShadow = true;
-            localCar.container.add(localCar.body);
-
-            // Cockpit Canopy
-            const cabinGeo = new THREE.BoxGeometry(1.8, 0.8, 2.2);
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, transparent: true, opacity: 0.7 });
-            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-            cabin.position.set(0, 1.5, -0.4);
-            localCar.container.add(cabin);
-
-            // Assembly Wheels sets
-            const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.6, 12);
-            wheelGeo.rotateZ(Math.PI / 2);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-
-            const wheelOffsets = [
-                { x: 1.3, y: 0.6, z: 1.5 },   // Front Left
-                { x: -1.3, y: 0.6, z: 1.5 },  // Front Right
-                { x: 1.3, y: 0.6, z: -1.5 },  // Rear Left
-                { x: -1.3, y: 0.6, z: -1.5 }  // Rear Right
-            ];
-
-            wheelOffsets.forEach(offset => {
-                const w = new THREE.Mesh(wheelGeo, wheelMat);
-                w.position.set(offset.x, offset.y, offset.z);
-                w.castShadow = true;
-                localCar.container.add(w);
-                localCar.wheels.push(w);
-            });
-
-            car.add(localCar.container);
-            
-            // Setup base coordinate anchors
-            car.position.set(0, getHeight(0, 0) + 2, 0);
-            scene.add(car);
-        }
-
-        // --- AI AGENTS BOT GENERATION POOL ---
-        function spawnAIDrivers() {
-            const colors = [0xe74c3c, 0x9b59b6, 0xf1c40f, 0xe67e22];
-            
-            for(let i=0; i<4; i++) {
-                const aiGroup = new THREE.Group();
-                const aiContainer = new THREE.Group();
-
-                const bGeo = new THREE.BoxGeometry(2.4, 1.0, 4.8);
-                const bMat = new THREE.MeshStandardMaterial({ color: colors[i], roughness: 0.4 });
-                const body = new THREE.Mesh(bGeo, bMat);
-                body.position.y = 0.8;
-                aiContainer.add(body);
-
-                // Quick decorative cylinders for AI wheels
-                const wGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.6, 8);
-                wGeo.rotateZ(Math.PI/2);
-                const wMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
-                
-                let wheelsArr = [];
-                [-1.3, 1.3].forEach(wx => {
-                    [-1.5, 1.5].forEach(wz => {
-                        let w = new THREE.Mesh(wGeo, wMat);
-                        w.position.set(wx, 0.6, wz);
-                        aiContainer.add(w);
-                        wheelsArr.push(w);
-                    });
-                });
-
-                aiGroup.add(aiContainer);
-                aiGroup.position.set((Math.random()-0.5)*150, 10, (Math.random()-0.5)*150);
-                scene.add(aiGroup);
-
-                aiDrivers.push({
-                    mesh: aiGroup,
-                    container: aiContainer,
-                    wheels: wheelsArr,
-                    speed: 0.4 + Math.random()*0.3,
-                    targetX: (Math.random()-0.5)*WORLD_SIZE,
-                    targetZ: (Math.random()-0.5)*WORLD_SIZE,
-                    rotY: Math.random() * Math.PI * 2
-                });
-            }
-        }
-
-        // --- BUSINESS UPGRADES STORE ENGINE LOGIC ---
-        function buyUpgrade(type, cost) {
-            if (playerCash >= cost && upgradeTiers[type] < 5) {
+        window.buyUpgrade = function(type) {
+            let cost = type === 'speed' ? upgradeTiers.speed * 150 : upgradeTiers.grip * 200;
+            if(playerCash >= cost) {
                 playerCash -= cost;
                 upgradeTiers[type]++;
-                
                 document.getElementById('hud_cash').innerText = playerCash;
-                document.getElementById(`lvl_${type}`).innerText = upgradeTiers[type];
-                
-                // Scale scaling modifier pricing limits
-                let newCost = Math.round(cost * 1.6);
-                const btn = document.getElementById(`btn_${type}`);
-                
-                if (upgradeTiers[type] >= 5) {
-                    btn.innerText = "MAX";
-                    btn.disabled = true;
-                } else {
-                    btn.innerText = `$${newCost}`;
-                    btn.setAttribute('onclick', `buyUpgrade('${type}', ${newCost})`);
-                }
+                document.getElementById('shop_cash').innerText = playerCash;
+                document.getElementById('tier_speed').innerText = upgradeTiers.speed;
+                document.getElementById('tier_grip').innerText = upgradeTiers.grip;
+                document.getElementById(`lbl_${type}`).innerText = "Tier " + upgradeTiers[type];
+            }
+        };
+
+        // UI Key Handling
+        window.addEventListener('keydown', (e) => {
+            if(document.activeElement === document.getElementById('chat_input')) {
+                if(e.key === 'Enter') sendChatMessage();
+                return;
+            }
+            if(e.key.toLowerCase() === 'p') toggleShop();
+            if(e.key === 'Enter') document.getElementById('chat_input').focus();
+            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false;
+        });
+
+        function sendChatMessage() {
+            const inp = document.getElementById('chat_input');
+            const msg = inp.value.trim();
+            inp.value = ""; inp.blur();
+            if(!msg) return;
+            
+            if(window.network) {
+                window.network.push(window.network.chatRef, { name: playerDisplayName, msg: msg, time: Date.now() });
+            } else {
+                showLocalBubble(playerDisplayName, msg);
             }
         }
 
-        // --- HARDWARE IO CONTROLLERS TRANSLATOR ---
-        function handleInput(event, isPressed) {
-            switch (event.code) {
-                case 'KeyW': case 'ArrowUp': keys.w = isPressed; break;
-                case 'KeyA': case 'ArrowLeft': keys.a = isPressed; break;
-                case 'KeyS': case 'ArrowDown': keys.s = isPressed; break;
-                case 'KeyD': case 'ArrowRight': keys.d = isPressed; break;
+        function showLocalBubble(sender, text) {
+            if(sender === playerDisplayName) {
+                scene.remove(localCar.tag);
+                localCar.tag = createDynamicTag(playerDisplayName, text);
+                localCar.mesh.add(localCar.tag);
+                setTimeout(() => {
+                    scene.remove(localCar.tag);
+                    localCar.tag = createDynamicTag(playerDisplayName);
+                    localCar.mesh.add(localCar.tag);
+                }, 4000);
             }
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            const log = document.getElementById('chat_logs');
+            log.innerHTML += `<div><b>${sender}:</b> ${text}</div>`;
+            log.scrollTop = log.scrollHeight;
         }
 
         // --- ENGINE TICK ANIMATION LOOP ---
@@ -579,8 +474,7 @@
 
                     const totalAirTimeSeconds = (Date.now() - airTimeStart) / 1000;
                     
-                    // MODIFIED: Changed tracking interval check from 5000ms to 1000ms (1 second)
-                    if (Date.now() - lastMultiplierTick >= 1000) {
+                    if (Date.now() - lastMultiplierTick >= 5000) {
                         activeMultiplier += 1;
                         playerCash *= activeMultiplier; 
                         lastMultiplierTick = Date.now();
@@ -648,7 +542,7 @@
                     ai.wheels.forEach(w => w.rotation.x += ai.speed);
                 });
 
-                // Network snapshot sync stream placeholder setup
+                // Network snapshot sync stream
                 if (window.network && time - lastNetTime > 40) {
                     lastNetTime = time;
                     window.network.set(window.network.playerRef, {
@@ -663,6 +557,15 @@
             let camOffset = new THREE.Vector3(0, 5.5, -13).applyMatrix4(car.matrixWorld);
             camera.position.lerp(camOffset, 0.1);
             camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 0.5, car.position.z));
+
+            // Interpolate remote player updates
+            for (let id in remotePlayers) {
+                let r = remotePlayers[id];
+                r.mesh.position.lerp(r.tPos, 0.2);
+                r.mesh.rotation.y = THREE.MathUtils.lerp(r.mesh.rotation.y, r.tRotY, 0.2);
+                r.container.rotation.x = THREE.MathUtils.lerp(r.container.rotation.x, r.tRotX, 0.2);
+                r.container.rotation.z = THREE.MathUtils.lerp(r.container.rotation.z, r.tRotZ, 0.2);
+            }
 
             // HUD Gauges Renderer Engine
             document.getElementById('speed_digital').innerText = Math.round(Math.abs(speed) * 95);
@@ -687,8 +590,55 @@
             renderer.render(scene, camera);
         }
 
-        // Initialize script trigger setup
-        window.onload = init;
+        // --- MULTIPLAYER AND CHAT SYNC SYSTEM ---
+        const initNetwork = setInterval(() => {
+            if(window.network) {
+                clearInterval(initNetwork);
+                const { ref, db, onValue, chatRef } = window.network;
+
+                // Watch multiplayer players array
+                onValue(ref(db, 'players'), (snap) => {
+                    const data = snap.val(); if(!data) return;
+                    for(let id in data) {
+                        if(id === window.network.playerId) continue;
+                        let p = data[id];
+                        if(!remotePlayers[id]) {
+                            let rModel = createCarModel(p.color, p.name);
+                            scene.add(rModel.mesh);
+                            remotePlayers[id] = { ...rModel, tPos: new THREE.Vector3(p.x, p.y, p.z), tRotY: p.rotY, tRotX: p.rotX, tRotZ: p.rotZ };
+                        } else {
+                            remotePlayers[id].tPos.set(p.x, p.y, p.z);
+                            remotePlayers[id].tRotY = p.rotY; remotePlayers[id].tRotX = p.rotX; remotePlayers[id].tRotZ = p.rotZ;
+                        }
+                    }
+                });
+
+                // Global Chat synchronization stream listener loop
+                onValue(chatRef, (snap) => {
+                    const data = snap.val(); if(!data) return;
+                    const keys = Object.keys(data);
+                    const latest = data[keys[keys.length - 1]];
+                    if(latest && latest.time > Date.now() - 2000) {
+                        showLocalBubble(latest.name, latest.msg);
+                    }
+                });
+
+                animate(0);
+            }
+        }, 100);
+
+        document.getElementById('join_btn').addEventListener('click', () => {
+            let nick = document.getElementById('username_input').value.trim();
+            if(nick) playerDisplayName = nick;
+            playerSelectedColor = document.getElementById('color_wheel').value;
+
+            scene.remove(car);
+            localCar = createCarModel(playerSelectedColor, playerDisplayName);
+            car = localCar.mesh; scene.add(car); car.position.set(0, 10, 0);
+
+            document.getElementById('auth_overlay').style.display = 'none';
+            gameActive = true;
+        });
     </script>
 </body>
 </html>

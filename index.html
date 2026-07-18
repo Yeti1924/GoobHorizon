@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Goob Horizon - Ultimate Sandbox Edition</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
@@ -115,7 +116,23 @@
         }
         .shop-btn:hover { filter: brightness(1.2); }
         .close-shop { width: 100%; padding: 8px; margin-top: 15px; background: #444; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
-    </style>
+    
+@media (max-width:768px){
+#dashboard{width:120px;height:120px;bottom:10px;left:10px}
+#gauge_canvas{width:120px;height:120px}
+#speed_digital{font-size:28px}
+#speed_unit{font-size:10px}
+#minimap_canvas{width:100px;height:100px;top:10px;right:10px}
+#stats_hud{font-size:12px;padding:8px;top:10px;left:10px}
+#chat_box{width:calc(100% - 20px);height:110px;left:10px;bottom:140px}
+#upgrade_shop{width:90%;max-width:320px}
+.auth-container{width:90%;padding:20px}
+}
+#mobileControls{display:none;position:fixed;bottom:20px;right:20px;z-index:999}
+#mobileControls button{width:60px;height:60px;margin:4px;border:none;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:24px}
+@media (max-width:768px){#mobileControls{display:block}}
+
+</style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script type="module">
@@ -189,7 +206,12 @@
 
     <canvas id="minimap_canvas" width="200" height="200"></canvas>
     
-    <script>
+    
+<div id="mobileControls">
+<button id="up">▲</button><br>
+<button id="left">◀</button><button id="down">▼</button><button id="right">▶</button>
+</div>
+<script>
         let gameActive = false;
         let playerDisplayName = "Driver";
         let playerSelectedColor = "#00bfff";
@@ -417,7 +439,23 @@
             log.scrollTop = log.scrollHeight;
         }
 
-        // --- ENGINE TICK ANIMATION LOOP ---
+        
+function bindTouch(id,key){
+ const b=document.getElementById(id);
+ if(!b)return;
+ ['touchstart'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[key]=true;}));
+ ['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[key]=false;}));
+}
+window.addEventListener('load',()=>{
+['up:w','down:s','left:a','right:d'].forEach(p=>{let[a,k]=p.split(':');bindTouch(a,k);});
+});
+window.addEventListener('resize',()=>{
+camera.aspect=window.innerWidth/window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+// --- ENGINE TICK ANIMATION LOOP ---
         let lastNetTime = 0;
         function animate(time) {
             requestAnimationFrame(animate);

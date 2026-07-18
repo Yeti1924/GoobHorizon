@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Terrain Rotation</title>
+    <title>Goob Horizon - Fixed Pitch Rotation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
@@ -84,8 +84,6 @@
 
         // --- 3. VEHICLE SETUP ---
         const car = new THREE.Group();
-        
-        // Inner container for handling terrain tilt separately from steering rotation
         const carChassisContainer = new THREE.Group();
         
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.4, roughness: 0.3 });
@@ -101,9 +99,9 @@
         let speed = 0, rotation = 0;
         let verticalVelocity = 0; 
         
-        const MAX_SPEED = 1.4;       // 140 MPH top cap
-        const ACCELERATION = 0.0025; // Slashed again to make it accelerate even slower/heavier
-        const GRAVITY = 0.007;       // Kept floaty gravity
+        const MAX_SPEED = 1.4;       
+        const ACCELERATION = 0.0025; 
+        const GRAVITY = 0.007;       
         const CAR_HEIGHT_OFFSET = 0.4; 
 
         // --- 5. MINIMAP LOOP ---
@@ -139,10 +137,9 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Driving loops applying the slower acceleration rate
             if (keys.w) speed = Math.min(speed + ACCELERATION, MAX_SPEED); 
             else if (keys.s) speed = Math.max(speed - 0.02, -0.4);
-            else speed *= 0.985; // Drag
+            else speed *= 0.985; 
 
             if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
             if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
@@ -157,7 +154,6 @@
             let isAirborne = false;
 
             if (currentVehicleFloor > groundY + 0.1) {
-                // Airborne state
                 verticalVelocity -= GRAVITY;
                 document.getElementById('airtime').style.display = 'inline';
                 isAirborne = true;
@@ -188,23 +184,23 @@
                 isAirborne = false;
             }
 
-            // --- PITCH ROTATION CALCULATION (Up/Down Hills) ---
+            // --- FIXED PITCH ROTATION CALCULATION ---
             if (!isAirborne) {
-                // Look slightly ahead and behind based on the direction the car is facing
                 const lookDist = 1.5;
                 const dirX = Math.sin(rotation);
                 const dirZ = Math.cos(rotation);
 
+                // Sample points ahead and behind
                 const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
                 const backY = getHeight(car.position.x - dirX * lookDist, car.position.z - dirZ * lookDist);
 
-                // Trigonometry to find pitch angle based on height difference
-                const pitchAngle = Math.atan2(frontY - backY, lookDist * 2);
+                // FIXED: Inverted the mathematical pitch target (backY - frontY) to tilt nose UP when climbing hills
+                const pitchAngle = Math.atan2(backY - frontY, lookDist * 2);
 
-                // Smoothly interpolate current pitch rotation to avoid snapping jitter
+                // Apply tilt angle with smooth interpolation (lerp)
                 carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, pitchAngle, 0.15);
             } else {
-                // Slow return to flat chassis leveling when floating in mid-air
+                // Return chassis to neutral orientation during air time
                 carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
             }
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Physics & Jumps</title>
+    <title>Goob Horizon - Custom Physics</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
@@ -21,7 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="ui">SPEED: <span id="speed">0</span> MPH<br><span id="airtime" style="font-size: 16px; color: #ffcc00; display: none;">AIR TIME!</span></div>
+    <div id="ui">SPEED: <span id="speed">0</span> MPH<br><span id="airtime" style="font-size: 16px; color: #ffcc00; display: none;">BIG AIR!</span></div>
     <canvas id="minimap_canvas" width="220" height="220"></canvas>
     
     <script>
@@ -38,13 +38,12 @@
         scene.add(sunLight);
         scene.add(new THREE.AmbientLight(0x505050));
 
-        // --- 2. HILLS (Steeper for bigger jumps!) ---
+        // --- 2. HILLS ---
         const WORLD_SIZE = 1000;
         const MAP_SCALE = 220 / WORLD_SIZE; 
         const MAP_CENTER = 110;
 
         function getHeight(x, z) {
-            // Amplified the sine frequency and height multipliers to make sharper ramp hills
             const hill1 = Math.sin(x * 0.04) * Math.cos(z * 0.04) * 18; 
             const hill2 = Math.sin(x * 0.01 + z * 0.02) * 10;
             return hill1 + hill2;
@@ -87,16 +86,21 @@
         const car = new THREE.Group();
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.4, roughness: 0.3 });
         const chassis = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), bodyMat);
-        chassis.position.y = 0.4; // offset center of mass
+        chassis.position.y = 0.4;
         car.add(chassis);
         scene.add(car);
         camera.position.set(0, 5, -12);
 
-        // --- 4. GRAVITY VARIABLES ---
+        // --- 4. ADJUSTED SPEED & GRAVITY VARIABLES ---
         let speed = 0, rotation = 0;
         let verticalVelocity = 0; 
-        const GRAVITY = 0.015;     // Downward acceleration constant
-        const CAR_HEIGHT_OFFSET = 0.4; // Radius of wheels/chassis alignment
+        
+        // Tuning parameters matching your exact requests:
+        const MAX_SPEED = 1.4;       // Directly correlates to 140 MPH top cap
+        const ACCELERATION = 0.005;   // Dropped from 0.02 to make it accelerate much slower
+        const GRAVITY = 0.007;        // Dropped from 0.015 so you fall slower/float more in jumps
+        
+        const CAR_HEIGHT_OFFSET = 0.4; 
 
         // --- 5. MINIMAP LOOP ---
         const miniCanvas = document.getElementById('minimap_canvas');
@@ -131,52 +135,47 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Arcade Drive
-            if (keys.w) speed = Math.min(speed + 0.02, 1.8); // Higher speed boost for airtime!
-            else if (keys.s) speed = Math.max(speed - 0.03, -0.5);
-            else speed *= 0.985;
+            // Driving loops applying the slower acceleration rate
+            if (keys.w) speed = Math.min(speed + ACCELERATION, MAX_SPEED); 
+            else if (keys.s) speed = Math.max(speed - 0.02, -0.4);
+            else speed *= 0.985; // Drag
 
-            if (keys.a) rotation += 0.04 * (speed > 0 ? 1 : -0.5);
-            if (keys.d) rotation -= 0.04 * (speed > 0 ? 1 : -0.5);
+            // Scale handling dynamic smoothly across speeds
+            if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
+            if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
 
             car.rotation.y = rotation;
             car.translateZ(speed);
 
-            // --- GRAVITY ENGINE & COLLISION PHYSICS ---
+            // --- GRAVITY ENGINE WITH SLOWER FALL SYSTEM ---
             const groundY = getHeight(car.position.x, car.position.z);
             const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
 
             if (currentVehicleFloor > groundY + 0.1) {
-                // In the air: apply acceleration downwards
+                // Airborne state: processes the floatier gravity value
                 verticalVelocity -= GRAVITY;
                 document.getElementById('airtime').style.display = 'inline';
             } else {
-                // On the ground
                 document.getElementById('airtime').style.display = 'none';
                 
-                // If the car was traveling forward over a hump, calculate if momentum breaks ground adhesion
                 const nextGroundY = getHeight(
                     car.position.x + Math.sin(rotation) * speed, 
                     car.position.z + Math.cos(rotation) * speed
                 );
                 
-                // Calculate trajectory change slope
                 const slopeDelta = nextGroundY - groundY;
 
-                if (slopeDelta < -1.5 && speed > 0.8) { 
-                    // Car flies forward off a ridge because hill falls faster than car's native ground adaptation
-                    verticalVelocity = speed * 0.15; 
+                // Launch detection threshold tuned for slower gravity glide
+                if (slopeDelta < -1.2 && speed > 0.6) { 
+                    verticalVelocity = speed * 0.12; 
                 } else {
-                    // Normal ground tracking
                     verticalVelocity = 0;
                     car.position.y = groundY + CAR_HEIGHT_OFFSET;
                 }
             }
 
-            // Apply calculated vertical motion vector
             car.position.y += verticalVelocity;
 
-            // Extra safety catch if car falls through ground calculations
             if (car.position.y < groundY + CAR_HEIGHT_OFFSET) {
                 car.position.y = groundY + CAR_HEIGHT_OFFSET;
                 verticalVelocity = 0;
@@ -191,11 +190,11 @@
             // Camera Engine
             const relativeCameraOffset = new THREE.Vector3(0, 4.5, -11);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
-            camera.position.lerp(cameraOffset, 0.08); // Loose tracking for dynamic jumping effects
+            camera.position.lerp(cameraOffset, 0.08); 
             camera.lookAt(new THREE.Vector3(car.position.x, car.position.y, car.position.z));
 
-            // Dashboard & Map Update
-            document.getElementById('speed').innerText = Math.round(speed * 110);
+            // Dashboard matches 100x internal scale to hit exactly 140 max speed
+            document.getElementById('speed').innerText = Math.round(speed * 100);
             drawMinimap();
 
             renderer.render(scene, camera);

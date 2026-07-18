@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Advanced Physics Simulation</title>
+    <title>Goob Horizon - Multiplayer Simulation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
@@ -82,6 +82,38 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Firebase App and Database SDK Modules v9 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+        // Your exact integrated credentials
+        const firebaseConfig = {
+            apiKey: "AIzaSyB0_yk-kpB8Si-JGzI8k-qK9eWkGl5eRJ4",
+            authDomain: "goob-horizon.firebaseapp.com",
+            databaseURL: "https://goob-horizon-default-rtdb.firebaseio.com",
+            projectId: "goob-horizon",
+            storageBucket: "goob-horizon.firebasestorage.app",
+            messagingSenderId: "527981366865",
+            appId: "1:527981366865:web:d621647c471850d1aa7270",
+            measurementId: "G-D10NCG1DK4"
+        };
+
+        // Initialize App Setup
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Generate a random ID for this session player
+        const playerId = "player_" + Math.floor(Math.random() * 100000);
+        const playerRef = ref(db, `players/${playerId}`);
+
+        // Clean up database entry when player closes the window tab
+        onDisconnect(playerRef).remove();
+
+        // Export to standard window scope so the animation engine can access it
+        window.network = { playerId, playerRef, db, onValue, set, remove };
+    </script>
 </head>
 <body>
 
@@ -114,7 +146,6 @@
         const MAP_CENTER = 110;
 
         function getHeight(x, z) {
-            // Complex sinusoids create compound slope landscapes
             const hill1 = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 25; 
             const hill2 = Math.sin(x * 0.005 + z * 0.01) * 12;
             return hill1 + hill2;
@@ -142,9 +173,9 @@
         const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x1e5c1e, flatShading: true, roughness: 0.7 });
 
         for (let i = 0; i < TREE_COUNT; i++) {
-            const x = (Math.random() - 0.5) * WORLD_SIZE * 0.95;
-            const z = (Math.random() - 0.5) * WORLD_SIZE * 0.95;
-            const y = getHeight(x, z);
+            const pseudoX = Math.sin(i * 4325.2) * WORLD_SIZE * 0.45;
+            const pseudoZ = Math.cos(i * 7215.7) * WORLD_SIZE * 0.45;
+            const y = getHeight(pseudoX, pseudoZ);
             
             const treeGroup = new THREE.Group();
             const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 6, 5), treeTrunkMat);
@@ -155,58 +186,63 @@
             leaves.position.y = 9;
             treeGroup.add(leaves);
             
-            treeGroup.position.set(x, y, z);
+            treeGroup.position.set(pseudoX, y, pseudoZ);
             scene.add(treeGroup);
             
-            trees.push({ x: x, z: z, radius: COLLISION_RADIUS });
+            trees.push({ x: pseudoX, z: pseudoZ, radius: COLLISION_RADIUS });
         }
 
-        // --- 4. DETAILED SPORTS CAR MODEL ---
-        const car = new THREE.Group();
-        const carChassisContainer = new THREE.Group();
-        
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff1133, metalness: 0.7, roughness: 0.2 });
-        const cabinMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.1 });
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        // --- 4. MODEL DESIGN FACTORY ---
+        function createCarModel(colorHex) {
+            const group = new THREE.Group();
+            const chassisContainer = new THREE.Group();
+            
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.7, roughness: 0.2 });
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.1 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
 
-        const bodyBase = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 4.4), bodyMat);
-        bodyBase.position.y = 0.4;
-        carChassisContainer.add(bodyBase);
+            const bodyBase = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 4.4), bodyMat);
+            bodyBase.position.y = 0.4;
+            chassisContainer.add(bodyBase);
 
-        const hood = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 1.8), bodyMat);
-        hood.position.set(0, 0.6, 1.2);
-        carChassisContainer.add(hood);
+            const hood = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 1.8), bodyMat);
+            hood.position.set(0, 0.6, 1.2);
+            chassisContainer.add(hood);
 
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 1.8), cabinMat);
-        cabin.position.set(0, 0.9, -0.4);
-        carChassisContainer.add(cabin);
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 1.8), cabinMat);
+            cabin.position.set(0, 0.9, -0.4);
+            chassisContainer.add(cabin);
 
-        const wheelGeom = new THREE.CylinderGeometry(0.45, 0.45, 0.4, 12);
-        wheelGeom.rotateZ(Math.PI / 2); 
-        
-        const frontLeftWheel = new THREE.Mesh(wheelGeom, wheelMat);
-        frontLeftWheel.position.set(1.2, 0.35, 1.3);
-        
-        const frontRightWheel = new THREE.Mesh(wheelGeom, wheelMat);
-        frontRightWheel.position.set(-1.2, 0.35, 1.3);
-        
-        const rearLeftWheel = new THREE.Mesh(wheelGeom, wheelMat);
-        rearLeftWheel.position.set(1.2, 0.35, -1.3);
-        
-        const rearRightWheel = new THREE.Mesh(wheelGeom, wheelMat);
-        rearRightWheel.position.set(-1.2, 0.35, -1.3);
+            const wheelGeom = new THREE.CylinderGeometry(0.45, 0.45, 0.4, 12);
+            wheelGeom.rotateZ(Math.PI / 2); 
+            
+            const fl = new THREE.Mesh(wheelGeom, wheelMat); fl.position.set(1.2, 0.35, 1.3);
+            const fr = new THREE.Mesh(wheelGeom, wheelMat); fr.position.set(-1.2, 0.35, 1.3);
+            const rl = new THREE.Mesh(wheelGeom, wheelMat); rl.position.set(1.2, 0.35, -1.3);
+            const rr = new THREE.Mesh(wheelGeom, wheelMat); rr.position.set(-1.2, 0.35, -1.3);
 
-        carChassisContainer.add(frontLeftWheel, frontRightWheel, rearLeftWheel, rearRightWheel);
-        car.add(carChassisContainer);
+            chassisContainer.add(fl, fr, rl, rr);
+            group.add(chassisContainer);
+            
+            return { mesh: group, container: chassisContainer, wheels: [fl, fr, rl, rr] };
+        }
+
+        // Host vehicle (Neon Red)
+        const localCarData = createCarModel(0xff1133);
+        const car = localCarData.mesh;
+        const carChassisContainer = localCarData.container;
         scene.add(car);
         
+        car.position.set((Math.random() - 0.5) * 60, 20, (Math.random() - 0.5) * 60);
         camera.position.set(0, 5, -12);
 
-        // --- 5. CONFIG TUNING PHYSICS & FORCES ---
+        const remotePlayers = {};
+
+        // --- 5. CONFIG TUNING PHYSICS ---
         let speed = 0, rotation = 0;
         let verticalVelocity = 0; 
         
-        const BASE_MAX_SPEED = 1.4;    // The throttle's absolute engine limit on flat ground
+        const BASE_MAX_SPEED = 1.4;    
         const ACCELERATION = 0.0035; 
         const GRAVITY = 0.007;       
         const CAR_HEIGHT_OFFSET = 0.0; 
@@ -224,6 +260,16 @@
                 miniCtx.fill();
             });
 
+            // Draw peers (Teal/Yellow dots)
+            miniCtx.fillStyle = '#00ffcc';
+            for (let id in remotePlayers) {
+                const p = remotePlayers[id].mesh;
+                miniCtx.beginPath();
+                miniCtx.arc(p.position.x * MAP_SCALE + MAP_CENTER, p.position.z * MAP_SCALE + MAP_CENTER, 2.0, 0, Math.PI * 2);
+                miniCtx.fill();
+            }
+
+            // Draw local host (Red Arrow)
             const carMapX = car.position.x * MAP_SCALE + MAP_CENTER;
             const carMapZ = car.position.z * MAP_SCALE + MAP_CENTER;
             miniCtx.save();
@@ -241,69 +287,54 @@
         window.addEventListener('keydown', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
         window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
 
+        let lastNetworkTick = 0;
+
         // --- 8. GLOBAL RENDER ANIMATION TICK ---
-        function animate() {
+        function animate(timestamp) {
             requestAnimationFrame(animate);
 
-            // --- ADVANCED DYNAMIC HILL & TURN PHYSICS CALCULATIONS ---
+            // --- ADVANCED DYNAMIC HILL & TURN PHYSICS ---
             const groundY = getHeight(car.position.x, car.position.z);
             const dirX = Math.sin(rotation);
             const dirZ = Math.cos(rotation);
 
-            // 1. Calculate Slope Delta directly in front of the car vector
             const checkDist = 1.0;
             const nextGroundY = getHeight(car.position.x + dirX * checkDist, car.position.z + dirZ * checkDist);
-            const slopeGrade = nextGroundY - groundY; // Positive means climbing, negative means descending
+            const slopeGrade = nextGroundY - groundY; 
 
-            // 2. Compute dynamic physics forces
-            // Slopes affect max speed threshold (downhills allow you to break past flat limits)
             const dynamicMaxSpeed = BASE_MAX_SPEED - (slopeGrade * 0.8); 
-            
-            // Gravity applies force directly against or with acceleration vector
             let slopeGravityForce = -slopeGrade * 0.008; 
             
-            // Centrifugal turning drag calculations
             let turnFriction = 0;
             if (Math.abs(speed) > 0.1) {
                 if (keys.a || keys.d) {
-                    // Fast movement turns generate intense sideways drag coefficient
                     turnFriction = Math.abs(speed) * 0.015;
                 }
             }
 
-            // 3. Process Throttle & Braking Inputs with contextual environmental drag
             if (keys.w) {
                 speed += ACCELERATION + slopeGravityForce;
-                // Clamp forward velocity smoothly against current physical peak thresholds
                 if (speed > dynamicMaxSpeed) {
-                    // Drag naturally pulls speed down if we cross limits, gravity pushes it up if falling down hills
                     speed = THREE.MathUtils.lerp(speed, dynamicMaxSpeed, 0.05);
                 }
             } else if (keys.s) {
                 speed = Math.max(speed - 0.02, -0.4);
             } else {
-                // Natural deceleration coasting drag + gravity rolling forces
                 speed *= 0.985;
                 speed += slopeGravityForce;
             }
 
-            // Apply turn structural drag to energy calculations
             if (speed > 0) speed = Math.max(speed - turnFriction, 0);
             if (speed < 0) speed = Math.min(speed + turnFriction, 0);
 
-            // Handle directional rotation
             if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
             if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
 
             car.rotation.y = rotation;
             car.translateZ(speed);
 
-            // Visual wheel rotation speed updates
             const wheelSpinDelta = speed * 1.5;
-            frontLeftWheel.rotation.x += wheelSpinDelta;
-            frontRightWheel.rotation.x += wheelSpinDelta;
-            rearLeftWheel.rotation.x += wheelSpinDelta;
-            rearRightWheel.rotation.x += wheelSpinDelta;
+            localCarData.wheels.forEach(w => w.rotation.x += wheelSpinDelta);
 
             // --- TREE COLLISION PASS ---
             for (let i = 0; i < trees.length; i++) {
@@ -313,11 +344,9 @@
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance < tree.radius) {
-                    speed = -speed * 0.4; // Bounce momentum recoil
-                    
+                    speed = -speed * 0.4; 
                     const pushX = (dx / distance) * (tree.radius - distance + 0.1);
                     const pushZ = (dz / distance) * (tree.radius - distance + 0.1);
-                    
                     car.position.x += pushX;
                     car.position.z += pushZ;
                 }
@@ -334,10 +363,7 @@
             } else {
                 document.getElementById('airtime').style.display = 'none';
                 
-                const launchCheckY = getHeight(
-                    car.position.x + dirX * speed, 
-                    car.position.z + dirZ * speed
-                );
+                const launchCheckY = getHeight(car.position.x + dirX * speed, car.position.z + dirZ * speed);
                 const launchDelta = launchCheckY - groundY;
 
                 if (launchDelta < -1.2 && speed > 0.6) { 
@@ -369,17 +395,41 @@
                 carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
             }
 
-            // Sandbox Edge Wrap
+            // Sandbox Boundaries
             if (car.position.x > WORLD_SIZE/2) car.position.x = -WORLD_SIZE/2;
             if (car.position.x < -WORLD_SIZE/2) car.position.x = WORLD_SIZE/2;
             if (car.position.z > WORLD_SIZE/2) car.position.z = -WORLD_SIZE/2;
             if (car.position.z < -WORLD_SIZE/2) car.position.z = WORLD_SIZE/2;
 
-            // Camera Tracker
+            // Camera follow mechanics
             const relativeCameraOffset = new THREE.Vector3(0, 4.5, -11);
             const cameraOffset = relativeCameraOffset.applyMatrix4(car.matrixWorld);
             camera.position.lerp(cameraOffset, 0.08); 
             camera.lookAt(new THREE.Vector3(car.position.x, car.position.y + 0.5, car.position.z));
+
+            // --- INTERPOLATE REMOTE NETWORK VEHICLES ---
+            for (let id in remotePlayers) {
+                const pData = remotePlayers[id];
+                pData.mesh.position.lerp(pData.targetPosition, 0.15);
+                pData.mesh.rotation.y = THREE.MathUtils.lerp(pData.mesh.rotation.y, pData.targetRotationY, 0.15);
+                pData.container.rotation.x = THREE.MathUtils.lerp(pData.container.rotation.x, pData.targetRotationX, 0.15);
+                
+                const remoteWheelSpin = pData.speed * 1.5;
+                pData.wheels.forEach(w => w.rotation.x += remoteWheelSpin);
+            }
+
+            // --- FIREBASE BROADCAST ROUTINE ---
+            if (window.network && timestamp - lastNetworkTick > 33) {
+                lastNetworkTick = timestamp;
+                window.network.set(window.network.playerRef, {
+                    x: car.position.x,
+                    y: car.position.y,
+                    z: car.position.z,
+                    rotY: car.rotation.y,
+                    rotX: carChassisContainer.rotation.x,
+                    speed: speed
+                });
+            }
 
             // --- 2D CANVAS SPEEDOMETER ARC LOGIC ---
             const currentMph = Math.round(speed * 100);
@@ -389,8 +439,7 @@
             const gCtx = gCanvas.getContext('2d');
             gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
 
-            // Display arc percentage relative to standard max engine limit
-            const speedPct = Math.min(Math.abs(speed) / BASE_MAX_SPEED, 1.2); // Allow arc overlap during high speed downhills
+            const speedPct = Math.min(Math.abs(speed) / BASE_MAX_SPEED, 1.2); 
             const centerX = gCanvas.width / 2;
             const centerY = gCanvas.height / 2;
             const radius = 90;
@@ -398,7 +447,6 @@
             const endAngle = 2.25 * Math.PI;   
             const dynamicEndAngle = startAngle + (endAngle - startAngle) * Math.min(speedPct, 1.0);
 
-            // Empty slot track
             gCtx.beginPath();
             gCtx.arc(centerX, centerY, radius, startAngle, endAngle);
             gCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -406,7 +454,6 @@
             gCtx.lineCap = 'round';
             gCtx.stroke();
 
-            // Active neon fill
             gCtx.beginPath();
             gCtx.arc(centerX, centerY, radius, startAngle, dynamicEndAngle);
             
@@ -426,7 +473,54 @@
             drawMinimap();
             renderer.render(scene, camera);
         }
-        animate();
+
+        // --- 9. LISTEN FOR NETWORK CLIENT CONNECTIONS ---
+        const setupNetworkHooks = setInterval(() => {
+            if (window.network) {
+                clearInterval(setupNetworkHooks);
+                
+                const playersRef = window.network.ref(window.network.db, 'players');
+                window.network.onValue(playersRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (!data) return;
+
+                    for (let id in data) {
+                        if (id === window.network.playerId) continue; 
+
+                        const p = data[id];
+                        if (!remotePlayers[id]) {
+                            // Spawn teammate/opponent vehicle (Teal styling)
+                            const newCar = createCarModel(0x00ffcc);
+                            scene.add(newCar.mesh);
+                            
+                            remotePlayers[id] = {
+                                mesh: newCar.mesh,
+                                container: newCar.container,
+                                wheels: newCar.wheels,
+                                targetPosition: new THREE.Vector3(p.x, p.y, p.z),
+                                targetRotationY: p.rotY,
+                                targetRotationX: p.rotX,
+                                speed: p.speed
+                            };
+                        } else {
+                            remotePlayers[id].targetPosition.set(p.x, p.y, p.z);
+                            remotePlayers[id].targetRotationY = p.rotY;
+                            remotePlayers[id].targetRotationX = p.rotX;
+                            remotePlayers[id].speed = p.speed;
+                        }
+                    }
+
+                    for (let id in remotePlayers) {
+                        if (!data[id]) {
+                            scene.remove(remotePlayers[id].mesh);
+                            delete remotePlayers[id];
+                        }
+                    }
+                });
+
+                animate(0);
+            }
+        }, 100);
     </script>
 </body>
 </html>

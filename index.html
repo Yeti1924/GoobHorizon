@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Goob Horizon - Custom Physics</title>
+    <title>Goob Horizon - Terrain Rotation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #ui { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
@@ -84,22 +84,26 @@
 
         // --- 3. VEHICLE SETUP ---
         const car = new THREE.Group();
+        
+        // Inner container for handling terrain tilt separately from steering rotation
+        const carChassisContainer = new THREE.Group();
+        
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.4, roughness: 0.3 });
         const chassis = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), bodyMat);
         chassis.position.y = 0.4;
-        car.add(chassis);
+        
+        carChassisContainer.add(chassis);
+        car.add(carChassisContainer);
         scene.add(car);
         camera.position.set(0, 5, -12);
 
-        // --- 4. ADJUSTED SPEED & GRAVITY VARIABLES ---
+        // --- 4. TUNED SPEED & GRAVITY VARIABLES ---
         let speed = 0, rotation = 0;
         let verticalVelocity = 0; 
         
-        // Tuning parameters matching your exact requests:
-        const MAX_SPEED = 1.4;       // Directly correlates to 140 MPH top cap
-        const ACCELERATION = 0.005;   // Dropped from 0.02 to make it accelerate much slower
-        const GRAVITY = 0.007;        // Dropped from 0.015 so you fall slower/float more in jumps
-        
+        const MAX_SPEED = 1.4;       // 140 MPH top cap
+        const ACCELERATION = 0.0025; // Slashed again to make it accelerate even slower/heavier
+        const GRAVITY = 0.007;       // Kept floaty gravity
         const CAR_HEIGHT_OFFSET = 0.4; 
 
         // --- 5. MINIMAP LOOP ---
@@ -140,21 +144,23 @@
             else if (keys.s) speed = Math.max(speed - 0.02, -0.4);
             else speed *= 0.985; // Drag
 
-            // Scale handling dynamic smoothly across speeds
             if (keys.a) rotation += 0.035 * (speed > 0 ? 1 : -0.5);
             if (keys.d) rotation -= 0.035 * (speed > 0 ? 1 : -0.5);
 
             car.rotation.y = rotation;
             car.translateZ(speed);
 
-            // --- GRAVITY ENGINE WITH SLOWER FALL SYSTEM ---
+            // --- GRAVITY & SURFACE ROTATION ENGINE ---
             const groundY = getHeight(car.position.x, car.position.z);
             const currentVehicleFloor = car.position.y - CAR_HEIGHT_OFFSET;
 
+            let isAirborne = false;
+
             if (currentVehicleFloor > groundY + 0.1) {
-                // Airborne state: processes the floatier gravity value
+                // Airborne state
                 verticalVelocity -= GRAVITY;
                 document.getElementById('airtime').style.display = 'inline';
+                isAirborne = true;
             } else {
                 document.getElementById('airtime').style.display = 'none';
                 
@@ -165,9 +171,9 @@
                 
                 const slopeDelta = nextGroundY - groundY;
 
-                // Launch detection threshold tuned for slower gravity glide
                 if (slopeDelta < -1.2 && speed > 0.6) { 
                     verticalVelocity = speed * 0.12; 
+                    isAirborne = true;
                 } else {
                     verticalVelocity = 0;
                     car.position.y = groundY + CAR_HEIGHT_OFFSET;
@@ -179,6 +185,27 @@
             if (car.position.y < groundY + CAR_HEIGHT_OFFSET) {
                 car.position.y = groundY + CAR_HEIGHT_OFFSET;
                 verticalVelocity = 0;
+                isAirborne = false;
+            }
+
+            // --- PITCH ROTATION CALCULATION (Up/Down Hills) ---
+            if (!isAirborne) {
+                // Look slightly ahead and behind based on the direction the car is facing
+                const lookDist = 1.5;
+                const dirX = Math.sin(rotation);
+                const dirZ = Math.cos(rotation);
+
+                const frontY = getHeight(car.position.x + dirX * lookDist, car.position.z + dirZ * lookDist);
+                const backY = getHeight(car.position.x - dirX * lookDist, car.position.z - dirZ * lookDist);
+
+                // Trigonometry to find pitch angle based on height difference
+                const pitchAngle = Math.atan2(frontY - backY, lookDist * 2);
+
+                // Smoothly interpolate current pitch rotation to avoid snapping jitter
+                carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, pitchAngle, 0.15);
+            } else {
+                // Slow return to flat chassis leveling when floating in mid-air
+                carChassisContainer.rotation.x = THREE.MathUtils.lerp(carChassisContainer.rotation.x, 0, 0.02);
             }
 
             // Boundaries
@@ -193,7 +220,7 @@
             camera.position.lerp(cameraOffset, 0.08); 
             camera.lookAt(new THREE.Vector3(car.position.x, car.position.y, car.position.z));
 
-            // Dashboard matches 100x internal scale to hit exactly 140 max speed
+            // Dashboard
             document.getElementById('speed').innerText = Math.round(speed * 100);
             drawMinimap();
 
